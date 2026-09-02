@@ -504,16 +504,21 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     conn.close()
     
     if not df_riwayat.empty:
-        # TAMPILAN DATAFRAME DENGAN NOMINAL RATA BELAKANG (RATA KANAN)
+        # REVISI 9.2: FORMAT NOMINAL TANPA 'Rp', MENGGUNAKAN TITIK RIBAUAN DAN RATA KANAN/BELAKANG
+        df_riwayat['Nominal'] = df_riwayat['nominal'].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+        df_display = df_riwayat[['id', 'tanggal', 'jenis', 'kategori', 'keterangan', 'Nominal']].rename(columns={
+            "id": "ID",
+            "tanggal": "Tanggal",
+            "jenis": "Jenis",
+            "kategori": "Kategori",
+            "keterangan": "Keterangan"
+        })
+
         st.dataframe(
-            df_riwayat,
+            df_display,
             column_config={
-                "id": st.column_config.NumberColumn("ID", format="%d"),
-                "tanggal": "Tanggal",
-                "jenis": "Jenis",
-                "kategori": "Kategori",
-                "keterangan": "Keterangan",
-                "nominal": st.column_config.NumberColumn("Nominal", format="%.0f", width="medium")
+                "ID": st.column_config.NumberColumn("ID", format="%d"),
+                "Nominal": st.column_config.TextColumn("Nominal")
             },
             use_container_width=True,
             hide_index=True
@@ -686,7 +691,7 @@ elif menu == "LAPORAN KEUANGAN":
     tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laba Rugi", "📄 Halaman 2 - Jasa Video Call"])
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    # REVISI CSS LAPORAN: MENGECILKAN JARAK NOMOR & MENYATUKAN MATA UANG DENGAN NOMINAL
+    # REVISI 9.2 CSS: NOMOR MEFET DENGAN TEKS KETERANGAN DAN TAMPILAN PRESISI
     doc_style = """
     <style>
         @page { 
@@ -701,14 +706,14 @@ elif menu == "LAPORAN KEUANGAN":
         .pdf-header-code { font-size: 10pt; font-weight: bold; margin-bottom: 8px; }
         .pdf-title { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 12px; line-height: 1.3; }
         
-        .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000; table-layout: fixed; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000; }
         .report-table td { padding: 2px 0px; vertical-align: top; }
         
-        /* REVISI LEBAR KOLOM SUPAYA RAPAT */
-        .num-col { width: 3%; text-align: left; }
-        .label-col { width: 52%; padding-left: 0px !important; }
-        .sep-col { width: 2%; text-align: center; }
-        .val-col { width: 43%; text-align: right; }
+        /* REVISI 9.2: LEBAR NOMOR DIPERKETAT (15PX) SUPAYA MEPET DENGAN KETERANGAN */
+        .num-col { width: 15px; text-align: left; padding-right: 2px !important; }
+        .label-col { text-align: left; }
+        .sep-col { width: 20px; text-align: center; }
+        .val-col { width: 180px; text-align: right; }
         
         .text-right { text-align: right !important; }
         .bold { font-weight: bold !important; }

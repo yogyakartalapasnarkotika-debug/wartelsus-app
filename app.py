@@ -101,7 +101,20 @@ st.markdown("""
                 box-shadow: none !important;
                 width: 100% !important;
                 background: white !important;
-            }
+            }/* Menyembunyikan Header / Toolbar Atas Streamlit */
+header[data-testid="stHeader"] {
+    display: none !important;
+}
+
+/* Menghilangkan tombol opsi tambahan jika masih muncul */
+#MainMenu {
+    visibility: hidden;
+}
+
+/* Menghilangkan footer 'Powered by Streamlit' */
+footer {
+    visibility: hidden;
+}
         }
 
         /* Form Laporan Fisik */

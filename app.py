@@ -2,70 +2,127 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime
 
-# 1. Konfigurasi Halaman & CSS Tema Admin POS Profesional
+# 1. Konfigurasi Halaman & CSS A4 Print Standard
 st.set_page_config(
-    page_title="Sistem Keuangan Wartelsus - Lapas Narkotika Yogyakarta",
-    page_icon="💰",
+    page_title="WARTELSUS KPPK - LAPAS NARKOTIKA YOGYAKARTA",
+    page_icon="🏢",
     layout="wide"
 )
 
 st.markdown("""
     <style>
-        /* Modern Admin Theme */
-        .stApp {
-            background-color: #f8fafc;
+        /* Tipografi & Warna Kontras Tinggi */
+        html, body, [class*="css"] {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #0f172a;
         }
         
-        /* Custom Sidebar */
+        .main {
+            background-color: #f1f5f9;
+        }
+
+        /* Styling Sidebar Kontras */
         section[data-testid="stSidebar"] {
-            background-color: #1e293b !important;
-            color: #f8fafc !important;
+            background-color: #0f172a !important;
+        }
+        section[data-testid="stSidebar"] * {
+            color: #ffffff !important;
         }
         section[data-testid="stSidebar"] .stRadio label {
-            color: #cbd5e1 !important;
-            font-size: 15px !important;
-            font-weight: 500 !important;
-            padding: 8px 12px !important;
-            border-radius: 6px !important;
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
+            background-color: #1e293b;
+            margin-bottom: 6px;
+            display: block;
         }
         section[data-testid="stSidebar"] .stRadio label:hover {
-            background-color: #334155 !important;
+            background-color: #0284c7 !important;
             color: #ffffff !important;
         }
 
         /* Metric Cards */
-        .metric-card {
+        .metric-box {
             background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .metric-title { font-size: 14px; color: #475569; font-weight: 800; text-transform: uppercase; }
+        .metric-value { font-size: 24px; font-weight: 900; margin-top: 8px; }
+
+        /* Judul Kapital & Jelas */
+        .page-header {
+            font-size: 28px;
+            font-weight: 900;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            border-bottom: 4px solid #0284c7;
+            padding-bottom: 8px;
+        }
+        .section-header {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            margin-top: 15px;
             margin-bottom: 15px;
         }
-        .metric-title { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; }
-        .metric-value { font-size: 22px; color: #0f172a; font-weight: 700; margin-top: 5px; }
 
-        /* Laporan Formatting Presisi PDF (100% Identik Acuan) */
+        /* Standard Cetak PDF A4 Presisi (210mm x 297mm) */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+            section[data-testid="stSidebar"], 
+            .stButton, 
+            header, 
+            footer, 
+            .stTabs [role="tablist"],
+            .no-print {
+                display: none !important;
+            }
+            .main .block-container { 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                width: 100% !important;
+            }
+            .pdf-page { 
+                border: none !important; 
+                padding: 0 !important; 
+                box-shadow: none !important;
+                width: 100% !important;
+                background: white !important;
+            }
+        }
+
+        /* Form Laporan Fisik */
         .pdf-page {
             background: #ffffff;
             color: #000000;
-            padding: 35px 45px;
+            padding: 30px;
             font-family: Arial, sans-serif;
             font-size: 11pt;
-            border: 1px solid #cbd5e1;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
+            border: 1px solid #94a3b8;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border-radius: 4px;
         }
         .pdf-title {
             text-align: center;
             font-weight: bold;
             font-size: 12pt;
             text-transform: uppercase;
-            margin-bottom: 25px;
-            line-height: 1.3;
+            margin-bottom: 20px;
+            line-height: 1.4;
         }
         .pdf-table {
             width: 100%;
@@ -80,35 +137,28 @@ st.markdown("""
         .bold { font-weight: bold; }
         
         .ttd-container {
-            margin-top: 40px;
+            margin-top: 30px;
             float: right;
-            width: 320px;
+            width: 300px;
             text-align: center;
             font-size: 11pt;
-        }
-
-        @media print {
-            section[data-testid="stSidebar"], 
-            .stButton, 
-            header, 
-            footer, 
-            .stTabs [role="tablist"],
-            .no-print {
-                display: none !important;
-            }
-            .main .block-container { padding: 0 !important; margin: 0 !important; }
-            .pdf-page { border: none !important; padding: 0 !important; box-shadow: none !important; }
         }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper Format Currency
+# Helper Formatting
 def fmt_rupiah(val):
     try:
         val = float(val)
         return f"Rp {val:,.0f}".replace(",", ".")
     except:
         return "Rp 0"
+
+def fmt_num(val):
+    try:
+        return f"{float(val):,.0f}".replace(",", ".")
+    except:
+        return "0"
 
 def parse_rupiah(val_str):
     try:
@@ -121,12 +171,11 @@ def parse_rupiah(val_str):
 def init_db():
     conn = sqlite3.connect("wartelsus_pos.db")
     c = conn.cursor()
-    # Tabel Transaksi
     c.execute("""
         CREATE TABLE IF NOT EXISTS transaksi (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tanggal TEXT,
-            jenis TEXT, -- 'PENDAPATAN' atau 'BIAYA'
+            jenis TEXT,
             kategori TEXT,
             keterangan TEXT,
             nominal REAL
@@ -134,20 +183,20 @@ def init_db():
     """)
     conn.commit()
 
-    # Seed Default Data jika kosong
+    # Data Seed Awal
     c.execute("SELECT COUNT(*) FROM transaksi")
     if c.fetchone()[0] == 0:
         default_tx = [
-            ("2026-08-31", "PENDAPATAN", "WARTEL SUS", "Pendapatan Wartel Agustus 2026", 59000000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PULSA PASCA BAYAR", 2960000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "INTERNET", 1005000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "ATK", 0.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PPH 23 (2%)", 1180000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP s.d JULI 2027", 300000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "SERVER", 2243110.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "ANGSURAN PC WARTEL 8", 1000000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "INSENTIF JAGA KANTIN AGUSTUS 2026", 450000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "LAIN-LAIN (CHARGER + KABEL TYPE C)", 300000.0)
+            ("2026-08-31", "PENDAPATAN", "PENDAPATAN WARTEL", "PENDAPATAN WARTEL AGUSTUS", 59000000.0),
+            ("2026-08-31", "BIAYA", "TAGIHAN TELEPON/PULSA", "PULSA PASCA BAYAR", 2960000.0),
+            ("2026-08-31", "BIAYA", "TAGIHAN INTERNET", "INTERNET", 1005000.0),
+            ("2026-08-31", "BIAYA", "ATK & PERLENGKAPAN", "ATK", 0.0),
+            ("2026-08-31", "BIAYA", "PAJAK & PERIZINAN", "PPH 23 (2%)", 1180000.0),
+            ("2026-08-31", "BIAYA", "PAJAK & PERIZINAN", "PNBP s.d JULI 2027", 300000.0),
+            ("2026-08-31", "BIAYA", "PEMELIHARAAN SERVER", "SERVER", 2243110.0),
+            ("2026-08-31", "BIAYA", "ANGSURAN PERALATAN", "ANGSURAN PC WARTEL 8", 1000000.0),
+            ("2026-08-31", "BIAYA", "INSENTIF & GAJI", "INSENTIF JAGA KANTIN AGUSTUS 2026", 450000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL LAIN-LAIN", "LAIN-LAIN (CHARGER + KABEL TYPE C)", 300000.0)
         ]
         c.executemany("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)", default_tx)
         conn.commit()
@@ -155,31 +204,30 @@ def init_db():
 
 init_db()
 
-# 3. Sidebar Navigation UI
+# 3. Sidebar Navigation
 with st.sidebar:
     st.markdown("""
         <div style="padding: 10px 0px; text-align: center;">
-            <h3 style="color: #ffffff; margin: 0; font-size: 18px;">🏢 WARTELSUS KPPK</h3>
-            <p style="color: #94a3b8; font-size: 12px; margin-top: 4px;">Lapas Narkotika Yogyakarta</p>
+            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900;">🏢 WARTELSUS KPPK</h2>
+            <p style="color: #38bdf8; font-size: 13px; font-weight: 700; margin-top: 4px;">LAPAS NARKOTIKA YOGYAKARTA</p>
         </div>
         <hr style="border-color: #334155; margin-bottom: 20px;">
     """, unsafe_allow_html=True)
 
     menu = st.radio(
         "MENU UTAMA",
-        ["📊 Dashboard", "💳 Transaksi", "📄 Laporan"],
+        ["DASHBOARD", "TRANSAKSI", "LAPORAN"],
         index=0
     )
 
 # -----------------------------------------------------------------------------
 # MENU 1: DASHBOARD
 # -----------------------------------------------------------------------------
-if menu == "📊 Dashboard":
-    st.title("📊 Dashboard Utama Keuangan")
-    st.caption("Ringkasan Seluruh Transaksi dan Grafik Tren dari Data Awal Hingga Periode Akhir")
+if menu == "DASHBOARD":
+    st.markdown('<div class="page-header">DASHBOARD</div>', unsafe_allow_html=True)
 
     conn = sqlite3.connect("wartelsus_pos.db")
-    df_tx = pd.read_sql_query("SELECT * FROM transaksi ORDER BY tanggal ASC, id ASC", conn)
+    df_tx = pd.read_sql_query("SELECT * FROM transaksi ORDER BY tanggal ASC", conn)
     conn.close()
 
     if not df_tx.empty:
@@ -187,146 +235,184 @@ if menu == "📊 Dashboard":
         tot_biaya = df_tx[df_tx['jenis'] == 'BIAYA']['nominal'].sum()
         laba_bersih = tot_pendapatan - tot_biaya
 
-        # Metrics Bar
-        m1, m2, m3, m4 = st.columns(4)
+        # Metrics Card (3 Card tanpa Total Entry Data)
+        m1, m2, m3 = st.columns(3)
         with m1:
-            st.markdown(f'<div class="metric-card"><div class="metric-title">Total Pendapatan</div><div class="metric-value" style="color:#10b981;">{fmt_rupiah(tot_pendapatan)}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-box"><div class="metric-title">TOTAL PENDAPATAN</div><div class="metric-value" style="color:#10b981;">{fmt_rupiah(tot_pendapatan)}</div></div>', unsafe_allow_html=True)
         with m2:
-            st.markdown(f'<div class="metric-card"><div class="metric-title">Total Biaya Operasional</div><div class="metric-value" style="color:#ef4444;">{fmt_rupiah(tot_biaya)}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-box"><div class="metric-title">TOTAL BIAYA OPERASIONAL</div><div class="metric-value" style="color:#ef4444;">{fmt_rupiah(tot_biaya)}</div></div>', unsafe_allow_html=True)
         with m3:
-            st.markdown(f'<div class="metric-card"><div class="metric-title">Laba Bersih akumulasi</div><div class="metric-value" style="color:#0284c7;">{fmt_rupiah(laba_bersih)}</div></div>', unsafe_allow_html=True)
-        with m4:
-            st.markdown(f'<div class="metric-card"><div class="metric-title">Total Entry Data</div><div class="metric-value">{len(df_tx)} Transaksi</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-box"><div class="metric-title">LABA BERSIH AKUMULASI</div><div class="metric-value" style="color:#0284c7;">{fmt_rupiah(laba_bersih)}</div></div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Grafik Profesional
+        # Baris Grafik
         col_g1, col_g2 = st.columns([6, 4])
+        
         with col_g1:
-            st.subheader("📈 Grafik Tren Keuangan")
+            st.markdown('<div class="section-header">GRAFIK</div>', unsafe_allow_html=True)
             df_tx['tanggal_dt'] = pd.to_datetime(df_tx['tanggal'])
-            df_grouped = df_tx.groupby([df_tx['tanggal_dt'].dt.strftime('%Y-%m'), 'jenis'])['nominal'].sum().reset_index()
+            df_tx['bulan_tahun'] = df_tx['tanggal_dt'].dt.strftime('%b %Y')
+            
+            df_grouped = df_tx.groupby(['bulan_tahun', 'jenis'], sort=False)['nominal'].sum().reset_index()
 
             fig = px.bar(
-                df_grouped, x='tanggal_dt', y='nominal', color='jenis',
+                df_grouped, x='bulan_tahun', y='nominal', color='jenis',
                 barmode='group',
-                labels={'tanggal_dt': 'Periode Bulan', 'nominal': 'Jumlah (Rp)', 'jenis': 'Kategori'},
-                color_discrete_map={'PENDAPATAN': '#10b981', 'BIAYA': '#ef4444'},
-                title="Perbandingan Pendapatan vs Biaya per Bulan"
+                labels={'bulan_tahun': 'Bulan Laporan', 'nominal': 'Jumlah (Rp)', 'jenis': 'Jenis'},
+                color_discrete_map={'PENDAPATAN': '#10b981', 'BIAYA': '#ef4444'}
             )
-            fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=40, b=20))
+            fig.update_layout(
+                template="plotly_white", 
+                font=dict(size=13, color="#0f172a"),
+                margin=dict(l=20, r=20, t=20, b=20),
+                legend=dict(title_text='', orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         with col_g2:
-            st.subheader("🍰 Komposisi Biaya Operasional")
+            st.markdown('<div class="section-header">OPERASIONAL</div>', unsafe_allow_html=True)
             df_biaya = df_tx[df_tx['jenis'] == 'BIAYA']
             if not df_biaya.empty:
                 fig_pie = px.pie(
-                    df_biaya, values='nominal', names='keterangan',
-                    title="Rincian Pengeluaran Operasional",
+                    df_biaya, values='nominal', names='kategori',
                     hole=0.4
                 )
-                fig_pie.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=40, b=20))
+                fig_pie.update_layout(
+                    template="plotly_white",
+                    font=dict(size=12, color="#0f172a"),
+                    margin=dict(l=10, r=10, t=20, b=20)
+                )
                 st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Tabel Riwayat Transaksi Seluruh Data
-        st.subheader("📋 Data Riwayat Transaksi Keseluruhan")
-        df_display = df_tx.copy()
-        df_display['nominal'] = df_display['nominal'].apply(fmt_rupiah)
-        st.dataframe(df_display[['id', 'tanggal', 'jenis', 'kategori', 'keterangan', 'nominal']], use_container_width=True, hide_index=True)
-
 # -----------------------------------------------------------------------------
-# MENU 2: TRANSAKSI (INPUT DATA POS)
+# MENU 2: TRANSAKSI
 # -----------------------------------------------------------------------------
-elif menu == "💳 Transaksi":
-    st.title("💳 Penginputan Data Transaksi")
-    st.caption("Input data transaksi Pendapatan maupun Biaya Operasional dengan format angka otomatis")
+elif menu == "TRANSAKSI":
+    st.markdown('<div class="page-header">TRANSAKSI</div>', unsafe_allow_html=True)
 
-    tab_in1, tab_in2 = st.tabs(["➕ Tambah Transaksi Baru", "📑 Kelola Data Transaksi"])
+    tab_in1, tab_in2 = st.tabs(["➕ INPUT TRANSAKSI BARU", "📋 DAFTAR DATA TRANSAKSI"])
+
+    # List Pilihan Kategori Default
+    opsi_kategori_default = [
+        "TAGIHAN INTERNET",
+        "TAGIHAN LISTRIK",
+        "TAGIHAN TELEPON/PULSA",
+        "PENDAPATAN WARTEL",
+        "ATK & PERLENGKAPAN",
+        "PAJAK & PERIZINAN",
+        "PEMELIHARAAN SERVER",
+        "ANGSURAN PERALATAN",
+        "INSENTIF & GAJI",
+        "OPERASIONAL LAIN-LAIN",
+        "➕ TAMBAH KATEGORI BARU..."
+    ]
 
     with tab_in1:
-        st.subheader("Form Entry Transaksi")
+        st.markdown('<div class="section-header">FORM ENTRY TRANSAKSI</div>', unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
         with c1:
             tgl_input = st.date_input("Tanggal Transaksi", datetime.now())
-            jenis_input = st.selectbox("Jenis Transaksi", ["PENDAPATAN", "BIAYA"])
-            kategori_input = st.text_input("Kategori / Sumber", value="WARTEL SUS" if jenis_input == "PENDAPATAN" else "OPERASIONAL")
-        
-        with c2:
-            ket_input = st.text_input("Keterangan Transaksi", placeholder="Contoh: Pulsa Pasca Bayar / Pendapatan Agustus")
+            jenis_input = st.selectbox("Jenis Transaksi", ["BIAYA", "PENDAPATAN"])
             
-            # Formatted Accounting Input (Tanpa tombol - +)
-            nom_raw = st.text_input("Nominal Transaksi (Rp)", value="0", help="Ketik angka tanpa titik/koma. Otomatis terformat accounting.")
-            nom_float = parse_rupiah(nom_raw)
-            st.markdown(f"Format Accounting: **{fmt_rupiah(nom_float)}**")
+            kat_selected = st.selectbox("Kategori Transaksi Pengeluaran / Pendapatan", opsi_kategori_default)
+            if kat_selected == "➕ TAMBAH KATEGORI BARU...":
+                kategori_input = st.text_input("Tuliskan Kategori Baru:", placeholder="Contoh: BIAYA PERBAIKAN AC").upper()
+            else:
+                kategori_input = kat_selected
 
-        if st.button("💾 Simpan Transaksi", type="primary", use_container_width=True):
+        with c2:
+            ket_input = st.text_input("Keterangan Rincian / Detail Transaksi", placeholder="Contoh: Pembayaran Internet IndiHome Bulan Agustus")
+            
+            nom_raw = st.text_input("Nominal Transaksi (Rp)", value="0", help="Ketik angka tanpa titik. Format otomatis accounting.")
+            nom_float = parse_rupiah(nom_raw)
+            st.markdown(f"Nominal Terbilang: **{fmt_rupiah(nom_float)}**")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("💾 SIMPAN DATA TRANSAKSI", type="primary", use_container_width=True):
             if nom_float <= 0 and jenis_input == "PENDAPATAN":
                 st.error("Nominal pendapatan harus lebih dari 0!")
             elif ket_input.strip() == "":
-                st.error("Keterangan transaksi tidak boleh kosong!")
+                st.error("Keterangan detail transaksi harus diisi!")
+            elif kategori_input.strip() == "":
+                st.error("Kategori transaksi harus ditentukan!")
             else:
                 conn = sqlite3.connect("wartelsus_pos.db")
                 c = conn.cursor()
                 c.execute("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)",
-                          (str(tgl_input), jenis_input, kategori_input, ket_input.upper(), nom_float))
+                          (str(tgl_input), jenis_input, kategori_input.upper(), ket_input.upper(), nom_float))
                 conn.commit()
                 conn.close()
                 st.success(f"Transaksi '{ket_input.upper()}' sebesar {fmt_rupiah(nom_float)} berhasil disimpan!")
                 st.rerun()
 
     with tab_in2:
-        st.subheader("Daftar Transaksi Tersimpan")
+        st.markdown('<div class="section-header">DATA TRANSAKSI TERSIMPAN</div>', unsafe_allow_html=True)
         conn = sqlite3.connect("wartelsus_pos.db")
-        df_edit = pd.read_sql_query("SELECT * FROM transaksi ORDER BY id DESC", conn)
+        df_edit = pd.read_sql_query("SELECT * FROM transaksi ORDER BY tanggal DESC, id DESC", conn)
         conn.close()
 
-        for idx, row in df_edit.iterrows():
-            c_tgl, c_jns, c_ket, c_nom, c_act = st.columns([2, 2, 4, 3, 1])
-            c_tgl.write(row['tanggal'])
-            c_jns.write(f"**{row['jenis']}**")
-            c_ket.write(row['keterangan'])
-            c_nom.write(fmt_rupiah(row['nominal']))
-            if c_act.button("🗑️", key=f"del_tx_{row['id']}"):
-                conn = sqlite3.connect("wartelsus_pos.db")
-                c = conn.cursor()
-                c.execute("DELETE FROM transaksi WHERE id = ?", (row['id'],))
-                conn.commit()
-                conn.close()
-                st.rerun()
+        if not df_edit.empty:
+            for idx, row in df_edit.iterrows():
+                c_tgl, c_jns, c_kat, c_ket, c_nom, c_act = st.columns([1.5, 1.5, 2.5, 3.5, 2, 1])
+                c_tgl.write(f"**{row['tanggal']}**")
+                c_jns.write(f"**{row['jenis']}**")
+                c_kat.write(row['kategori'])
+                c_ket.write(row['keterangan'])
+                c_nom.write(fmt_rupiah(row['nominal']))
+                if c_act.button("🗑️", key=f"del_tx_{row['id']}"):
+                    conn = sqlite3.connect("wartelsus_pos.db")
+                    c = conn.cursor()
+                    c.execute("DELETE FROM transaksi WHERE id = ?", (row['id'],))
+                    conn.commit()
+                    conn.close()
+                    st.rerun()
 
 # -----------------------------------------------------------------------------
-# MENU 3: LAPORAN (OUTPUT FISIK 100% IDENTIK PDF RESMI)
+# MENU 3: LAPORAN (HANYA DATA BULAN YANG DIPILIH)
 # -----------------------------------------------------------------------------
-elif menu == "📄 Laporan":
-    st.title("📄 Laporan Laba Rugi Resmi")
-    st.caption("Cetak Laporan Keuangan Wartelsus sesuai format standar resmi")
+elif menu == "LAPORAN":
+    st.markdown('<div class="page-header">LAPORAN</div>', unsafe_allow_html=True)
 
-    # Filter Periode Laporan
+    # Filter Bulan & Tahun Laporan
     st.markdown('<div class="no-print">', unsafe_allow_html=True)
     col_l1, col_l2, col_l3 = st.columns([3, 3, 4])
+    
+    bulan_dict = {
+        "JANUARI": "01", "FEBRUARI": "02", "MARET": "03", "APRIL": "04",
+        "MEI": "05", "JUNI": "06", "JULI": "07", "AGUSTUS": "08",
+        "SEPTEMBER": "09", "OKTOBER": "10", "NOVEMBER": "11", "DESEMBER": "12"
+    }
+
     with col_l1:
-        bulan_opt = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"]
-        sel_bulan = st.selectbox("Bulan Laporan", bulan_opt, index=7)
+        sel_bulan_nama = st.selectbox("PILIH BULAN LAPORAN", list(bulan_dict.keys()), index=7)
+        sel_bulan_kode = bulan_dict[sel_bulan_nama]
     with col_l2:
-        sel_tahun = st.number_input("Tahun Laporan", value=2026, min_value=2020, max_value=2030)
+        sel_tahun = st.number_input("PILIH TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
     with col_l3:
-        sel_tgl_cetak = st.date_input("Tanggal Tanda Tangan Cetak", datetime(2026, 9, 2))
+        sel_tgl_cetak = st.date_input("TANGGAL CETAK LAPORAN", datetime(2026, 9, 2))
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Fetch Data dari Database
+    # Filter Data Hanya Berdasarkan Bulan & Tahun yang Dipilih
+    periode_query = f"{sel_tahun}-{sel_bulan_kode}"
+    
     conn = sqlite3.connect("wartelsus_pos.db")
-    df_all = pd.read_sql_query("SELECT * FROM transaksi", conn)
+    df_filtered = pd.read_sql_query(
+        "SELECT * FROM transaksi WHERE strftime('%Y-%m', tanggal) = ?", 
+        conn, 
+        params=(periode_query,)
+    )
     conn.close()
 
-    # Kalkulasi Otomatis dari Database[cite: 4, 5]
-    pendapatan_tot = df_all[df_all['jenis'] == 'PENDAPATAN']['nominal'].sum()
-    df_biaya_list = df_all[df_all['jenis'] == 'BIAYA'].to_dict('records')
+    # Kalkulasi Khusus Bulan Terpilih
+    pendapatan_tot = df_filtered[df_filtered['jenis'] == 'PENDAPATAN']['nominal'].sum()
+    df_biaya_list = df_filtered[df_filtered['jenis'] == 'BIAYA'].to_dict('records')
     biaya_tot = sum([b['nominal'] for b in df_biaya_list])
     laba_bersih = pendapatan_tot - biaya_tot
 
-    # Formulasi Pembagian Hal 1[cite: 4]
+    # Formulasi Pembagian Hal 1
     porsi_lapas = 0.40 * laba_bersih
     porsi_kalapas = 0.10 * laba_bersih
     porsi_inkopasindo = 0.10 * laba_bersih
@@ -337,27 +423,25 @@ elif menu == "📄 Laporan":
     porsi_bagian = 0.035 * porsi_lapas
     porsi_pengurus = 0.015 * porsi_lapas
 
-    # Formulasi Pembagian Hal 2[cite: 5]
+    # Formulasi Pembagian Hal 2
     primkopasindo = 0.20 * laba_bersih
     muffaindo2 = 0.60 * laba_bersih
 
-    # Tombol Cetak PDF
-    st.markdown('<div class="no-print" style="margin-bottom:20px;">', unsafe_allow_html=True)
-    st.button("🖨️ Cetak / Print Laporan PDF", type="primary", on_click=lambda: st.components.v1.html("<script>window.parent.print();</script>", height=0))
+    # Tombol Cetak A4
+    st.markdown('<div class="no-print" style="margin-top:15px; margin-bottom:20px;">', unsafe_allow_html=True)
+    if df_filtered.empty:
+        st.warning(f"⚠️ Tidak ada data transaksi untuk periode bulan **{sel_bulan_nama} {sel_tahun}**.")
+    else:
+        st.info(f"Showing Laporan Periode: **{sel_bulan_nama} {sel_tahun}** ({len(df_filtered)} Transaksi ditemukan)")
+    
+    st.button("🖨️ CETAK / PRINT LAPORAN (UKURAN A4)", type="primary", on_click=lambda: st.components.v1.html("<script>window.parent.print();</script>", height=0))
     st.markdown('</div>', unsafe_allow_html=True)
 
-    tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laporan Laba Rugi", "📄 Halaman 2 - Laporan Jasa Video Call"])
+    tab_h1, tab_h2 = st.tabs(["📄 HALAMAN 1 - LAPORAN LABA RUGI", "📄 HALAMAN 2 - JASA VIDEO CALL"])
 
-    # Helper Format Angka Laporan (Tanpa Rp)
-    def fmt_num(val):
-        try:
-            return f"{float(val):,.0f}".replace(",", ".")
-        except:
-            return "0"
+    tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
-
-    # --- TAB HALAMAN 1 ---[cite: 4]
+    # --- TAB HALAMAN 1 ---
     with tab_h1:
         biaya_rows_h1 = ""
         for idx, b in enumerate(df_biaya_list):
@@ -369,12 +453,15 @@ elif menu == "📄 Laporan":
 <td class="text-right" style="width:20%;">{fmt_num(b['nominal'])}</td>
 </tr>"""
 
+        if not df_biaya_list:
+            biaya_rows_h1 = "<tr><td colspan='5' style='text-align:center;'>- Tidak ada data biaya operasional -</td></tr>"
+
         html_h1 = f"""<div class="pdf-page">
 <div style="font-size: 9pt;" class="bold">1 WARTEL SUS</div>
 <div class="pdf-title">
 LAPORAN LABA RUGI WARTEL MUFFAINDO<br>
 LAPAS NARKOTIKA KELAS IIA YOGYAKARTA<br>
-PERIODE {sel_bulan} {sel_tahun}
+PERIODE {sel_bulan_nama} {sel_tahun}
 </div>
 
 <table class="pdf-table">
@@ -494,7 +581,7 @@ PERIODE {sel_bulan} {sel_tahun}
 </div>"""
         st.markdown(html_h1, unsafe_allow_html=True)
 
-    # --- TAB HALAMAN 2 ---[cite: 5]
+    # --- TAB HALAMAN 2 ---
     with tab_h2:
         biaya_rows_h2 = ""
         for b in df_biaya_list:
@@ -504,11 +591,14 @@ PERIODE {sel_bulan} {sel_tahun}
 <td class="text-right" style="width:25%;">{fmt_num(b['nominal'])}</td>
 </tr>"""
 
+        if not df_biaya_list:
+            biaya_rows_h2 = "<tr><td colspan='3' style='text-align:center;'>- Tidak ada data biaya -</td></tr>"
+
         html_h2 = f"""<div class="pdf-page">
 <table class="pdf-table" style="margin-bottom: 15px;">
 <tr><td style="width:20%;">NAMA WARTEL</td><td>: WARTEL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA</td></tr>
 <tr><td>ALAMAT</td><td>: JL KALIURANG KM 17 PAKEMBINANGUN PAKEM SLEMAN YOGYAKARTA</td></tr>
-<tr><td>PERIODE PEMAKAIAN</td><td>: {sel_bulan} {sel_tahun}</td></tr>
+<tr><td>PERIODE PEMAKAIAN</td><td>: {sel_bulan_nama} {sel_tahun}</td></tr>
 </table>
 
 <div class="pdf-title">

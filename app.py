@@ -124,6 +124,17 @@ st.markdown("""
             background-color: #f4f6f9 !important;
         }
 
+        /* HILANGKAN FOOTER, "HOSTED WITH STREAMLIT", DAN STATUS BADGE */
+        footer, 
+        [data-testid="stStatusWidget"],
+        .viewerBadge_container__1A51w,
+        div[class*="viewerBadge"],
+        a[href*="streamlit.io"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+
         /* HILANGKAN FLOATING TOOLBAR DATAFRAME */
         [data-testid="stElementToolbar"], 
         .stElementToolbar,
@@ -134,7 +145,7 @@ st.markdown("""
         }
 
         header, [data-testid="stHeader"], [data-testid="stToolbar"],
-        .stAppHeader, #MainMenu, footer {
+        .stAppHeader, #MainMenu {
             display: none !important;
             visibility: hidden !important;
             height: 0px !important;
@@ -435,7 +446,7 @@ if menu == "DASHBOARD":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. MENU: TRANSAKSI POS (FORMAT ANGKA TANPA "Rp" & RATA KANAN)
+# 2. MENU: TRANSAKSI POS
 # -----------------------------------------------------------------------------
 elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
@@ -505,7 +516,7 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
         # Format Murni Angka Ribuan Tanpa "Rp"
         df_riwayat_display['nominal'] = df_riwayat_display['nominal'].apply(lambda x: fmt_num(x))
         
-        # Konfigurasi Kolom dengan Rata Kanan (Align Right) pada Nominal
+        # Konfigurasi Kolom dengan Rata Kanan pada Nominal
         st.dataframe(
             df_riwayat_display,
             column_config={

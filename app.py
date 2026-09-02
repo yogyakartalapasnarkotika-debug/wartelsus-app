@@ -31,38 +31,22 @@ st.markdown("""
             background-color: #f4f6f9 !important;
         }
 
-        /* HILANGKAN SEMUA BADGE STREAMLIT, GITHUB PROFILE, MANAGE APP, DAN FOOTER UNTUK SEMUA USER/BROWSER */
-        footer, 
-        header, 
-        [data-testid="stHeader"], 
-        [data-testid="stToolbar"],
-        [data-testid="stStatusWidget"],
-        [data-testid="stAppDeployButton"],
-        [data-testid="stDecoration"],
-        [data-testid="stSidebarCollapseButton"] + div,
+        /* PERBAIKAN: SEMBUNYIKAN FOOTER, HEADER, DAN BADGE STREAMLIT DENGAN SAFE SELECTOR */
+        footer { visibility: hidden !important; height: 0px !important; display: none !important; }
+        header { visibility: hidden !important; height: 0px !important; display: none !important; }
+        
+        [data-testid="stHeader"] { display: none !important; }
+        [data-testid="stToolbar"] { display: none !important; }
+        [data-testid="stStatusWidget"] { display: none !important; }
+        [data-testid="stAppDeployButton"] { display: none !important; }
+        [data-testid="stDecoration"] { display: none !important; }
+        
         .viewerBadge_container__1A51w,
-        div[class*="viewerBadge"],
-        div[class*="styles_viewerBadge"],
-        div[class*="Profile"],
-        div[class*="manageApp"],
-        a[href*="streamlit.io"],
-        a[href*="github.com"],
-        .stAppHeader, 
-        #MainMenu,
-        iframe[title="manage-app"] {
+        [class*="viewerBadge"],
+        [class*="profile"],
+        #MainMenu {
             display: none !important;
             visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0px !important;
-            width: 0px !important;
-            pointer-events: none !important;
-        }
-
-        /* Target khusus Floating Footer "Hosted with Streamlit" & Github Profile di bagian bawah */
-        div[style*="bottom: 0"], 
-        div[style*="position: fixed"],
-        div[class*="stApp"] > div:last-child {
-            display: none !important;
         }
 
         /* HILANGKAN FLOATING TOOLBAR DATAFRAME */
@@ -721,7 +705,6 @@ elif menu == "LAPORAN KEUANGAN":
         .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000; table-layout: fixed; }
         .report-table td { padding: 2px 3px; vertical-align: top; }
         
-        /* PENYESUAIAN DISINI: Kolom nomor diperketat ukurannya (2%) agar jarak ke keterangan lebih rapat */
         .num-col { width: 2%; text-align: left; padding-right: 0px !important; }
         .label-col { width: 58%; padding-left: 2px !important; }
         .sep-col { width: 3%; text-align: center; }

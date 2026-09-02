@@ -11,10 +11,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Inject CSS Kustom (Fix Filter Leak saat Cetak)
+# 2. Inject CSS Kustom (Fix Filter Leak & Cetak Jelas/Tajam)
 st.markdown("""
     <style>
-        /* Import Google Fonts - Poppins */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
         html, body, [class*="css"] {
@@ -23,7 +22,7 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           1. HILANGKAN TOP HEADER ASLI STREAMLIT
+           1. HILANGKAN TOP HEADER STREAMLIT
            ---------------------------------------------------- */
         header, 
         [data-testid="stHeader"], 
@@ -44,7 +43,7 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           2. TOP BLUE BAR & BREADCRUMB
+           2. TOP NAVBAR & BREADCRUMB
            ---------------------------------------------------- */
         .top-navbar {
             background-color: #1e88e5;
@@ -198,15 +197,15 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           6. PERBAIKAN STYLING CETAK A4 (FILTER DIJAMIN HILANG)
+           6. PERBAIKAN TOTAL MODE CETAK / PRINT (JELAS & TAJAM)
            ---------------------------------------------------- */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 10mm;
+                margin: 8mm;
             }
-            
-            /* Sembunyikan seluruh komponen UI Web */
+
+            /* Sembunyikan SEMUA elemen UI web dan elemen input */
             section[data-testid="stSidebar"], 
             .stButton, 
             header, 
@@ -215,36 +214,57 @@ st.markdown("""
             .breadcrumb-container,
             .stTabs [role="tablist"],
             .no-print,
-            .filter-container,
-            [data-testid="stForm"],
-            [data-testid="stSelectbox"],
-            [data-testid="stNumberInput"],
-            [data-testid="stDateInput"] {
+            [data-testid="stVerticalBlock"] > div:has(div[data-testid="stForm"]),
+            div[element-id*="filter"],
+            div[data-testid="stSelectbox"],
+            div[data-testid="stNumberInput"],
+            div[data-testid="stDateInput"],
+            .stMarkdown:has(.no-print) {
                 display: none !important;
                 visibility: hidden !important;
                 height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
-            .main .block-container { 
-                padding: 0 !important; 
-                margin: 0 !important; 
+            body, html, .main, .block-container {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
                 width: 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
+            /* Memaksa Teks dan Tabel Tajam (Hitam Pekat & Tidak Buram) */
             .pdf-page { 
                 border: none !important; 
                 padding: 0 !important; 
                 box-shadow: none !important;
                 width: 100% !important;
-                background: white !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-family: 'Arial', sans-serif !important;
+                -webkit-font-smoothing: antialiased;
+            }
+
+            .pdf-title, .pdf-table, .pdf-table td, .pdf-table th, .ttd-container {
+                color: #000000 !important;
+                text-shadow: none !important;
+                filter: none !important;
+            }
+
+            .pdf-table td, .pdf-table th {
+                border-color: #000000 !important;
             }
         }
 
         .pdf-page {
             background: #ffffff;
             color: #000000;
-            padding: 20px;
-            font-family: Arial, sans-serif;
+            padding: 25px;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 10pt;
             border: 1px solid #cbd5e1;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -258,25 +278,28 @@ st.markdown("""
             text-transform: uppercase;
             margin-bottom: 18px;
             line-height: 1.4;
+            color: #000000;
         }
         .pdf-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10pt;
+            font-size: 9.5pt;
+            color: #000000;
         }
         .pdf-table td, .pdf-table th {
-            padding: 3px 5px;
+            padding: 4px 6px;
             vertical-align: top;
         }
         .text-right { text-align: right; }
         .bold { font-weight: bold; }
         
         .ttd-container {
-            margin-top: 25px;
+            margin-top: 30px;
             float: right;
             width: 280px;
             text-align: center;
             font-size: 10pt;
+            color: #000000;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -353,12 +376,12 @@ with st.sidebar:
     menu = st.radio(
         "NAVIGATION",
         [" Dashboard", " Transaksi POS", " Laporan Keuangan"],
-        index=0
+        index=2
     )
 
 # Top Bar Header
 st.markdown("""
-    <div class="top-navbar">
+    <div class="top-navbar no-print">
         <div class="top-navbar-title">APLIKASI KEUANGAN WARTELSUS & POS</div>
         <div style="font-size: 13px; opacity: 0.9;">Tahun Anggaran 2026</div>
     </div>
@@ -570,7 +593,7 @@ elif "Transaksi" in menu:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# MENU 3: LAPORAN (FIXED: FILTER TERSEMBUYI SAAT PRINT)
+# MENU 3: LAPORAN (FILTER DISMBUNYIKAN 100% SAAT CETAK)
 # -----------------------------------------------------------------------------
 elif "Laporan" in menu:
     st.markdown("""
@@ -579,9 +602,10 @@ elif "Laporan" in menu:
         </div>
     """, unsafe_allow_html=True)
 
-    # Diberi wrapper class 'filter-container no-print' agar pasti hilang 100% saat dicetak
-    st.markdown('<div class="filter-container no-print">', unsafe_allow_html=True)
-    with st.container():
+    # PEMBUNGKUS FILTER DALAM CONTAINER NATIVE STREAMLIT (+ CLASS NO-PRINT)
+    filter_box = st.container()
+    with filter_box:
+        st.markdown('<div class="no-print">', unsafe_allow_html=True)
         st.markdown('<div class="content-card">', unsafe_allow_html=True)
         st.markdown('<div class="content-card-title">Filter Periode Laporan Cetak</div>', unsafe_allow_html=True)
         
@@ -594,15 +618,15 @@ elif "Laporan" in menu:
         }
 
         with col_l1:
-            sel_bulan_nama = st.selectbox("BULAN LAPORAN", list(bulan_dict.keys()), index=7)
+            sel_bulan_nama = st.selectbox("BULAN LAPORAN", list(bulan_dict.keys()), index=7, key="f_bulan")
             sel_bulan_kode = bulan_dict[sel_bulan_nama]
         with col_l2:
-            sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
+            sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030, key="f_tahun")
         with col_l3:
-            sel_tgl_cetak = st.date_input("TANGGAL CETAK", datetime(2026, 9, 2))
+            sel_tgl_cetak = st.date_input("TANGGAL CETAK", datetime(2026, 9, 2), key="f_tgl_cetak")
         
         st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # Query Filter Database
     periode_query = f"{sel_tahun}-{sel_bulan_kode}"
@@ -923,7 +947,7 @@ JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
 </div>
 
 <div style="clear:both;"></div>
-<div style="float: right; font-size: 8pt; margin-top: 15px;">Hal. 2</div>
+<div style="float: right; font-size: 8pt; margin-top: 15px;">Hal 2</div>
 <div style="clear:both;"></div>
 </div>"""
         st.markdown(html_h2, unsafe_allow_html=True)

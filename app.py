@@ -109,7 +109,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 4. CSS STYLING
+# 4. CSS STYLING & PENYEMBUNYIAN TOOLBAR (POINT 3) & STYLING SIDEBAR (POINT 4)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -118,6 +118,15 @@ st.markdown("""
         html, body, [class*="css"] {
             font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
             background-color: #f4f6f9 !important;
+        }
+
+        /* HILANGKAN FLOATING TOOLBAR DATAFRAME/TABLE (POINT 3) */
+        [data-testid="stElementToolbar"], 
+        .stElementToolbar,
+        div[data-testid="stDataFrameResizable"] > div:first-child > div:nth-child(2) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
         }
 
         header, [data-testid="stHeader"], [data-testid="stToolbar"],
@@ -134,6 +143,7 @@ st.markdown("""
             padding-right: 1rem !important;
         }
 
+        /* TOP NAVBAR */
         .admin-navbar {
             background-color: #3c8dbc;
             color: #ffffff;
@@ -147,13 +157,94 @@ st.markdown("""
         .admin-navbar-brand { font-size: 20px; font-weight: 700; }
         .admin-navbar-user { font-size: 13px; font-weight: 600; }
 
-        section[data-testid="stSidebar"] { background-color: #222d32 !important; width: 250px !important; }
-        section[data-testid="stSidebar"] * { color: #b8c7ce !important; }
-        .user-panel { padding: 15px 10px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1a2226; }
-        .user-avatar { width: 45px; height: 45px; border-radius: 50%; background: #3c8dbc; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; }
-        .user-info { font-size: 13px; font-weight: 600; color: #fff !important; }
-        .user-status { font-size: 11px; color: #00a65a !important; }
+        /* DESAIN SIDEBAR SESUAI CONTOH GAMBAR 2 (POINT 4) */
+        section[data-testid="stSidebar"] { 
+            background-color: #222d32 !important; 
+            width: 250px !important; 
+        }
+        section[data-testid="stSidebar"] * { 
+            color: #b8c7ce !important; 
+        }
+        
+        .user-panel { 
+            padding: 15px 12px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            border-bottom: 1px solid #1a2226; 
+            margin-bottom: 10px;
+        }
+        .user-avatar-img { 
+            width: 45px; 
+            height: 45px; 
+            border-radius: 50%; 
+            background-color: #5b9bd5; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 24px; 
+            color: #fff;
+            border: 2px solid #ffffff33;
+        }
+        .user-info-box { 
+            display: flex;
+            flex-direction: column;
+        }
+        .user-name-text { 
+            font-size: 14px; 
+            font-weight: 700; 
+            color: #ffffff !important; 
+            line-height: 1.2;
+        }
+        .user-online-status { 
+            font-size: 11px; 
+            color: #b8c7ce !important; 
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .online-dot {
+            height: 9px;
+            width: 9px;
+            background-color: #00a65a;
+            border-radius: 50%;
+            display: inline-block;
+        }
 
+        .nav-header {
+            padding: 10px 12px 5px 12px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #4b646f !important;
+            letter-spacing: 0.5px;
+        }
+
+        /* CUSTOM RADIO RADIO MENU AGAR TERLIHAT SEPERTI SIDEBAR ADMINLTE */
+        div[data-testid="stRadio"] > div {
+            gap: 2px !important;
+        }
+        div[data-testid="stRadio"] label {
+            padding: 10px 15px !important;
+            border-radius: 0px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        div[data-testid="stRadio"] label:hover {
+            background-color: #1e282c !important;
+            color: #ffffff !important;
+        }
+        div[data-testid="stRadio"] label[data-checked="true"] {
+            background-color: #1e282c !important;
+            color: #ffffff !important;
+            border-left: 3px solid #3c8dbc !important;
+        }
+
+        /* BOX COMPONENTS */
         .small-box {
             border-radius: 3px; position: relative; display: block; margin-bottom: 15px;
             box-shadow: 0 1px 1px rgba(0,0,0,0.1); color: #ffffff !important; padding: 12px 15px;
@@ -202,30 +293,48 @@ def fmt_num(val):
         return "0"
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR & MENU
+# 5. SIDEBAR & MENU DESAIN DESAIN TERBARU (POINT 4)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown(f"""
         <div class="user-panel">
-            <div class="user-avatar">👤</div>
-            <div>
-                <div class="user-info">{st.session_state.nama_lengkap}</div>
-                <div class="user-status">● {st.session_state.role}</div>
+            <div class="user-avatar-img">👤</div>
+            <div class="user-info-box">
+                <div class="user-name-text">{st.session_state.nama_lengkap}</div>
+                <div class="user-online-status"><span class="online-dot"></span> Online</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown('<div style="padding: 8px 12px; font-size: 11px; font-weight: bold; color: #4b646f;">MAIN NAVIGATION</div>', unsafe_allow_html=True)
+    st.markdown('<div class="nav-header">MAIN NAVIGATION</div>', unsafe_allow_html=True)
     
     if st.session_state.role == "Admin":
-        menu_options = ["DASHBOARD", "TRANSAKSI POS", "DATA PENGGUNA", "LAPORAN KEUANGAN"]
+        menu_options = [
+            "📊 DASHBOARD", 
+            "📁 TRANSAKSI POS", 
+            "👥 DATA PENGGUNA", 
+            "📄 LAPORAN KEUANGAN"
+        ]
     else:
-        menu_options = ["DASHBOARD", "LAPORAN KEUANGAN"]
+        menu_options = [
+            "📊 DASHBOARD", 
+            "📄 LAPORAN KEUANGAN"
+        ]
 
-    menu = st.radio("", menu_options, index=0, label_visibility="collapsed")
+    selected_menu = st.radio("", menu_options, index=0, label_visibility="collapsed")
     
+    # Mapping nama menu untuk logika internal
+    if "DASHBOARD" in selected_menu:
+        menu = "DASHBOARD"
+    elif "TRANSAKSI POS" in selected_menu:
+        menu = "TRANSAKSI POS"
+    elif "DATA PENGGUNA" in selected_menu:
+        menu = "DATA PENGGUNA"
+    elif "LAPORAN KEUANGAN" in selected_menu:
+        menu = "LAPORAN KEUANGAN"
+
     st.write("---")
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("🚪 LOGOUT", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.session_state.role = ""
@@ -368,7 +477,7 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. MENU: DATA PENGGUNA
+# 3. MENU: DATA PENGGUNA (UPDATE POINT 2: FITUR EDIT & HAPUS USER)
 # -----------------------------------------------------------------------------
 elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Pendaftaran User Baru</div>', unsafe_allow_html=True)
@@ -399,15 +508,92 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="box-container"><div class="box-header">Daftar Pengguna Sistem</div>', unsafe_allow_html=True)
+    # DAFTAR PENGGUNA DENGAN MENU EDIT DAN HAPUS (POINT 2)
+    st.markdown('<div class="box-container"><div class="box-header">Daftar Pengguna Sistem & Aksi (Edit / Hapus)</div>', unsafe_allow_html=True)
+    
     conn = sqlite3.connect("wartelsus_pos.db")
-    df_users = pd.read_sql_query("SELECT id, username, nama_lengkap, role FROM users", conn)
+    c = conn.cursor()
+    c.execute("SELECT id, username, nama_lengkap, role, password FROM users")
+    users_list = c.fetchall()
     conn.close()
-    st.dataframe(df_users, use_container_width=True)
+
+    # Tabel Header Custom
+    st.markdown("""
+        <table style="width:100%; border-collapse:collapse; font-size:13px; font-weight:bold; margin-bottom:10px;">
+            <tr style="background:#f4f6f9; border-bottom:2px solid #ddd; text-align:left;">
+                <th style="padding:8px; width:10%;">ID</th>
+                <th style="padding:8px; width:25%;">USERNAME</th>
+                <th style="padding:8px; width:35%;">NAMA LENGKAP</th>
+                <th style="padding:8px; width:15%;">ROLE</th>
+                <th style="padding:8px; width:15%; text-align:center;">AKSI</th>
+            </tr>
+        </table>
+    """, unsafe_allow_html=True)
+
+    for u in users_list:
+        u_id, u_user, u_nama, u_role, u_pass = u
+        
+        c_id, c_usr, c_nam, c_rol, c_act = st.columns([1, 2.5, 3.5, 1.5, 1.5])
+        with c_id:
+            st.write(f"#{u_id}")
+        with c_usr:
+            st.write(u_user)
+        with c_nam:
+            st.write(u_nama)
+        with c_rol:
+            st.write(f"**{u_role}**")
+        with c_act:
+            btn_col1, btn_col2 = st.columns(2)
+            with btn_col1:
+                edit_pressed = st.button("✏️", key=f"edit_btn_{u_id}", help="Edit User")
+            with btn_col2:
+                del_pressed = st.button("🗑️", key=f"del_btn_{u_id}", help="Hapus User")
+
+        # Form Edit (Toggle saat tombol edit ditekan)
+        if f"show_edit_{u_id}" not in st.session_state:
+            st.session_state[f"show_edit_{u_id}"] = False
+
+        if edit_pressed:
+            st.session_state[f"show_edit_{u_id}"] = not st.session_state[f"show_edit_{u_id}"]
+
+        if st.session_state[f"show_edit_{u_id}"]:
+            with st.expander(f"📝 Form Edit User #{u_id} ({u_user})", expanded=True):
+                e_nama = st.text_input("Nama Lengkap", value=u_nama, key=f"e_nama_{u_id}")
+                e_pass = st.text_input("Password Baru (Kosongkan jika tidak diubah)", type="password", key=f"e_pass_{u_id}")
+                e_role = st.selectbox("Role", ["User", "Admin"], index=0 if u_role == "User" else 1, key=f"e_role_{u_id}")
+                
+                if st.button("💾 Simpan Perubahan", key=f"save_edit_{u_id}", type="primary"):
+                    conn = sqlite3.connect("wartelsus_pos.db")
+                    c = conn.cursor()
+                    if e_pass.strip() != "":
+                        c.execute("UPDATE users SET nama_lengkap=?, role=?, password=? WHERE id=?", (e_nama, e_role, e_pass, u_id))
+                    else:
+                        c.execute("UPDATE users SET nama_lengkap=?, role=? WHERE id=?", (e_nama, e_role, u_id))
+                    conn.commit()
+                    conn.close()
+                    st.success("✅ Data user berhasil diperbarui!")
+                    st.session_state[f"show_edit_{u_id}"] = False
+                    st.rerun()
+
+        # Konfirmasi Hapus
+        if del_pressed:
+            if u_user == st.session_state.username:
+                st.error("⚠️ Anda tidak bisa menghapus akun anda sendiri yang sedang digunakan!")
+            else:
+                conn = sqlite3.connect("wartelsus_pos.db")
+                c = conn.cursor()
+                c.execute("DELETE FROM users WHERE id=?", (u_id,))
+                conn.commit()
+                conn.close()
+                st.success(f"🗑️ User #{u_id} ({u_user}) berhasil dihapus!")
+                st.rerun()
+
+        st.markdown("<hr style='margin:5px 0; border:0; border-top:1px solid #eee;'>", unsafe_allow_html=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 4. MENU: LAPORAN KEUANGAN (REVISI 5.C)
+# 4. MENU: LAPORAN KEUANGAN
 # -----------------------------------------------------------------------------
 elif menu == "LAPORAN KEUANGAN":
     st.markdown('<div class="box-container"><div class="box-header">Filter & Parameter Cetak Laporan</div>', unsafe_allow_html=True)
@@ -459,7 +645,6 @@ elif menu == "LAPORAN KEUANGAN":
     tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laba Rugi", "📄 Halaman 2 - Jasa Video Call"])
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    # MARGIN SESUAI GAMBAR UPLOAD (Top/Bottom 2.54cm, Left/Right 1.5cm)
     doc_style = """
     <style>
         @page { 
@@ -583,7 +768,7 @@ elif menu == "LAPORAN KEUANGAN":
         """
         components.html(html_h1, height=950, scrolling=True)
 
-    # HALAMAN 2 (REVISI 5.C: PENDAPATAN 1 & 2 SEJAJAR KIRI KANAN, PENGELUARAN DIBAWAHNYA, BAGI HASIL RAPAT)
+    # HALAMAN 2
     with tab_h2:
         df_ops_h2 = df_biaya_all[df_biaya_all['kategori'] != 'LAIN-LAIN'].to_dict('records')
         df_lain_h2 = df_biaya_all[df_biaya_all['kategori'] == 'LAIN-LAIN'].to_dict('records')
@@ -614,10 +799,8 @@ elif menu == "LAPORAN KEUANGAN":
                     JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
                 </div>
 
-                <!-- PENDAPATAN I DAN PENDAPATAN II SEJAJAR KIRI KANAN -->
                 <table class="report-table" style="margin-bottom: 10px;">
                     <tr>
-                        <!-- SEBELAH KIRI: PENDAPATAN I -->
                         <td style="width: 48%; vertical-align: top; padding-right: 10px;">
                             <div class="bold" style="margin-bottom: 4px;">PENDAPATAN I:</div>
                             <table class="report-table">
@@ -632,7 +815,6 @@ elif menu == "LAPORAN KEUANGAN":
 
                         <td style="width: 4%;"></td>
 
-                        <!-- SEBELAH KANAN: PENDAPATAN II -->
                         <td style="width: 48%; vertical-align: top; padding-left: 10px;">
                             <div class="bold" style="margin-bottom: 4px;">PENDAPATAN II:</div>
                             <table class="report-table">
@@ -647,7 +829,6 @@ elif menu == "LAPORAN KEUANGAN":
                     </tr>
                 </table>
 
-                <!-- TOTAL PENDAPATAN -->
                 <table class="report-table" style="border-top: 1px solid #000; border-bottom: 1px solid #000; margin-bottom: 12px; padding: 3px 0;">
                     <tr class="bold">
                         <td style="width: 70%;">TOTAL PENDAPATAN (PENDAPATAN I + PENDAPATAN II)</td>
@@ -656,7 +837,6 @@ elif menu == "LAPORAN KEUANGAN":
                     </tr>
                 </table>
 
-                <!-- DIBAWAHNYA PENGELUARAN -->
                 <div class="bold" style="margin-bottom: 4px;">PENGELUARAN:</div>
                 <table class="report-table" style="width: 70%;">
                     {rows_ops_h2}
@@ -664,7 +844,6 @@ elif menu == "LAPORAN KEUANGAN":
                     {rows_lain_h2}
                 </table>
 
-                <!-- TOTAL PENGELUARAN & LABA BERSIH -->
                 <table class="report-table" style="margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px; width: 70%;">
                     <tr class="bold">
                         <td style="width: 50%;">TOTAL PENGELUARAN</td>
@@ -678,7 +857,6 @@ elif menu == "LAPORAN KEUANGAN":
                     </tr>
                 </table>
 
-                <!-- PEMBAGIAN HASIL (JARAK RAPAT & DITATA RAPI) -->
                 <div class="bold" style="margin-top: 15px; margin-bottom: 4px;">PEMBAGIAN BAGI HASIL:</div>
                 <table class="report-table" style="width: 85%; line-height: 1.2;">
                     <tr>
@@ -726,7 +904,6 @@ elif menu == "LAPORAN KEUANGAN":
                     </tr>
                 </table>
 
-                <!-- TANDA TANGAN (NAMA DINAMIS SESUAI INPUT) -->
                 <div class="ttd-wrapper">
                     <div class="ttd-box">
                         <div>{tgl_ttd_str}</div>

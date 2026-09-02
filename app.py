@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize Active Menu State if not present
+# Initialize Active Menu State
 if "active_menu" not in st.session_state:
     st.session_state.active_menu = "DASHBOARD"
 
@@ -113,7 +113,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 4. CSS STYLING
+# 4. CSS STYLING & HELPER FUNCTIONS
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -247,10 +247,10 @@ st.markdown("""
             border-left: 3px solid #3c8dbc !important;
         }
 
-        /* BOX COMPONENTS */
+        /* BOX COMPONENTS TANPA MORE INFO */
         .small-box {
             border-radius: 3px; position: relative; display: block; margin-bottom: 15px;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.1); color: #ffffff !important; padding: 12px 15px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1); color: #ffffff !important; padding: 18px 15px;
         }
         .small-box-green { background-color: #00a65a !important; }
         .small-box-blue { background-color: #00c0ef !important; }
@@ -258,9 +258,9 @@ st.markdown("""
         .small-box-black { background-color: #222d32 !important; }
         .small-box-red { background-color: #dd4b39 !important; }
         
-        .small-box .inner h3 { font-size: 17px; font-weight: bold; margin: 0 0 5px 0; white-space: nowrap; padding: 0; color: #fff !important;}
+        .small-box .inner h3 { font-size: 18px; font-weight: bold; margin: 0 0 5px 0; white-space: nowrap; padding: 0; color: #fff !important;}
         .small-box .inner p { font-size: 12px; margin: 0; color: #fff !important; opacity: 0.9; }
-        .small-box .icon-bg { position: absolute; top: 10px; right: 10px; z-index: 0; font-size: 38px; color: rgba(0, 0, 0, 0.15); }
+        .small-box .icon-bg { position: absolute; top: 12px; right: 12px; z-index: 0; font-size: 36px; color: rgba(0, 0, 0, 0.15); }
 
         .box-container {
             background: #ffffff; border-top: 3px solid #3c8dbc; border-radius: 3px;
@@ -274,15 +274,10 @@ st.markdown("""
             margin: 0; 
         }
         input[type=number] { -moz-appearance: textfield; }
-        
-        /* Tombol info kustom */
-        .stButton>button {
-            border-radius: 3px;
-        }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper Format Akuntansi (Ribuan)
+# Helper Format Akuntansi Rupiah & Angka
 def fmt_rupiah(val):
     try:
         return f"Rp {float(val):,.0f}".replace(",", ".")
@@ -324,7 +319,6 @@ with st.sidebar:
             "📄 LAPORAN KEUANGAN"
         ]
 
-    # Temukan index menu aktif
     default_idx = 0
     for idx, opt in enumerate(menu_options):
         if st.session_state.active_menu in opt:
@@ -373,74 +367,53 @@ if menu == "DASHBOARD":
     df_all = pd.read_sql_query("SELECT * FROM transaksi", conn)
     conn.close()
 
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    month_str = datetime.now().strftime("%Y-%m")
-    year_str = datetime.now().strftime("%Y")
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    month_str = now.strftime("%Y-%m")
+    year_str = now.strftime("%Y")
 
     df_in = df_all[df_all['jenis'] == 'PENDAPATAN']
     df_out = df_all[df_all['jenis'] == 'BIAYA']
 
-    in_today = df_in[df_in['tanggal'] == today_str]['nominal'].sum()
-    in_month = df_in[df_in['tanggal'].str.startswith(month_str)]['nominal'].sum()
-    in_year = df_in[df_in['tanggal'].str.startswith(year_str)]['nominal'].sum()
+    # Akumulasi Pemasukan
+    in_today = df_in[df_in['tanggal'] <= today_str]['nominal'].sum()
+    in_month = df_in[df_in['tanggal'].str.startswith(month_str) & (df_in['tanggal'] <= today_str)]['nominal'].sum()
+    in_year = df_in[df_in['tanggal'].str.startswith(year_str) & (df_in['tanggal'] <= today_str)]['nominal'].sum()
     in_total = df_in['nominal'].sum()
 
-    out_today = df_out[df_out['tanggal'] == today_str]['nominal'].sum()
-    out_month = df_out[df_out['tanggal'].str.startswith(month_str)]['nominal'].sum()
-    out_year = df_out[df_out['tanggal'].str.startswith(year_str)]['nominal'].sum()
+    # Akumulasi Pengeluaran
+    out_today = df_out[df_out['tanggal'] <= today_str]['nominal'].sum()
+    out_month = df_out[df_out['tanggal'].str.startswith(month_str) & (df_out['tanggal'] <= today_str)]['nominal'].sum()
+    out_year = df_out[df_out['tanggal'].str.startswith(year_str) & (df_out['tanggal'] <= today_str)]['nominal'].sum()
     out_total = df_out['nominal'].sum()
 
-    # PEMASUKAN BOXES
+    # PEMASUKAN BOXES (TANPA TULISAN/TOMBOL MORE INFO)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f'<div class="small-box small-box-green"><div class="inner"><h3>{fmt_rupiah(in_today)}</h3><p>Pemasukan Hari Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_in_today", use_container_width=True):
-            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
-            st.rerun()
 
     with c2:
         st.markdown(f'<div class="small-box small-box-blue"><div class="inner"><h3>{fmt_rupiah(in_month)}</h3><p>Pemasukan Bulan Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_in_month", use_container_width=True):
-            st.session_state.active_menu = "LAPORAN KEUANGAN"
-            st.rerun()
 
     with c3:
         st.markdown(f'<div class="small-box small-box-orange"><div class="inner"><h3>{fmt_rupiah(in_year)}</h3><p>Pemasukan Tahun Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_in_year", use_container_width=True):
-            st.session_state.active_menu = "LAPORAN KEUANGAN"
-            st.rerun()
 
     with c4:
         st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(in_total)}</h3><p>Seluruh Pemasukan</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_in_total", use_container_width=True):
-            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
-            st.rerun()
 
-    # PENGELUARAN BOXES
+    # PENGELUARAN BOXES (TANPA TULISAN/TOMBOL MORE INFO)
     c5, c6, c7, c8 = st.columns(4)
     with c5:
         st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_today)}</h3><p>Pengeluaran Hari Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_out_today", use_container_width=True):
-            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
-            st.rerun()
 
     with c6:
         st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_month)}</h3><p>Pengeluaran Bulan Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_out_month", use_container_width=True):
-            st.session_state.active_menu = "LAPORAN KEUANGAN"
-            st.rerun()
 
     with c7:
         st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_year)}</h3><p>Pengeluaran Tahun Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_out_year", use_container_width=True):
-            st.session_state.active_menu = "LAPORAN KEUANGAN"
-            st.rerun()
 
     with c8:
         st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(out_total)}</h3><p>Seluruh Pengeluaran</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
-        if st.button("More info ➔", key="btn_out_total", use_container_width=True):
-            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
-            st.rerun()
 
     col_chart, col_cal = st.columns([7, 3])
     with col_chart:
@@ -457,13 +430,12 @@ if menu == "DASHBOARD":
 
     with col_cal:
         st.markdown('<div class="box-container"><div class="box-header" style="background:#00a65a; color:#fff; padding:6px 10px; margin:-15px -15px 10px -15px;">📅 Kalender</div>', unsafe_allow_html=True)
-        now = datetime.now()
         cal_html = calendar.HTMLCalendar().formatmonth(now.year, now.month)
         st.markdown(f"<div style='font-size:12px;'>{cal_html}</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. MENU: TRANSAKSI POS (FORMAT ANGKA AKUNTANSI RIBUAN)
+# 2. MENU: TRANSAKSI POS (FORMAT ANGKA TANPA "Rp" & RATA KANAN)
 # -----------------------------------------------------------------------------
 elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
@@ -505,7 +477,6 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     with col_tgl:
         tgl_transaksi = st.date_input("Tanggal Transaksi", datetime.now())
     with col_nom:
-        # Input Nominal Format Akuntansi
         nominal_raw = st.number_input("Nominal Transaksi (Rp)", min_value=0, step=10000, value=100000)
         st.caption(f"Format Akuntansi: **{fmt_rupiah(nominal_raw)}**")
 
@@ -529,11 +500,29 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     df_riwayat = pd.read_sql_query("SELECT id, tanggal, jenis, kategori, keterangan, nominal FROM transaksi ORDER BY id DESC", conn)
     conn.close()
     
-    # Apply format ribuan akuntansi pada kolom nominal dataframe
     if not df_riwayat.empty:
         df_riwayat_display = df_riwayat.copy()
-        df_riwayat_display['nominal'] = df_riwayat_display['nominal'].apply(lambda x: fmt_rupiah(x))
-        st.dataframe(df_riwayat_display, use_container_width=True)
+        # Format Murni Angka Ribuan Tanpa "Rp"
+        df_riwayat_display['nominal'] = df_riwayat_display['nominal'].apply(lambda x: fmt_num(x))
+        
+        # Konfigurasi Kolom dengan Rata Kanan (Align Right) pada Nominal
+        st.dataframe(
+            df_riwayat_display,
+            column_config={
+                "id": st.column_config.NumberColumn("ID", format="%d"),
+                "tanggal": "Tanggal",
+                "jenis": "Jenis",
+                "kategori": "Kategori",
+                "keterangan": "Keterangan",
+                "nominal": st.column_config.TextColumn(
+                    "Nominal",
+                    help="Nominal Transaksi (Format Ribuan)",
+                    width="medium"
+                )
+            },
+            use_container_width=True,
+            hide_index=True
+        )
     else:
         st.info("Belum ada data transaksi.")
         

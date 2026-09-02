@@ -3,25 +3,30 @@ import pandas as pd
 import sqlite3
 import plotly.express as px
 from datetime import datetime
+import calendar
 
-# 1. Konfigurasi Halaman
+# -----------------------------------------------------------------------------
+# 1. KONFIGURASI HALAMAN
+# -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="WARTELSUS KPPK - LAPAS NARKOTIKA YOGYAKARTA",
-    page_icon="🏢",
+    page_title="KeuanganApp - Lapas Narkotika Yogyakarta",
+    page_icon="💼",
     layout="wide"
 )
 
-# 2. CSS Kustom Presisi Cetak A4 & UI Streamlit
+# -----------------------------------------------------------------------------
+# 2. CSS STYLING (ADMINLTE DASHBOARD + A4 PRINT TAJAM)
+# -----------------------------------------------------------------------------
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap');
 
         html, body, [class*="css"] {
-            font-family: 'Roboto', sans-serif !important;
+            font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
             background-color: #f4f6f9 !important;
         }
 
-        /* Sembunyikan Header Native Streamlit */
+        /* Sembunyikan elemen bawaan Streamlit */
         header, [data-testid="stHeader"], [data-testid="stToolbar"],
         .stAppHeader, #MainMenu, footer {
             display: none !important;
@@ -30,63 +35,78 @@ st.markdown("""
         }
 
         .main .block-container {
-            padding-top: 1rem !important;
+            padding-top: 0.5rem !important;
             padding-bottom: 2rem !important;
-            padding-left: 1.5rem !important;
-            padding-right: 1.5rem !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
         }
 
-        /* Top Navbar */
-        .top-navbar {
-            background-color: #1e88e5;
+        /* Top Navbar AdminLTE */
+        .admin-navbar {
+            background-color: #3c8dbc;
             color: #ffffff;
-            padding: 12px 20px;
-            margin-left: -1.5rem;
-            margin-right: -1.5rem;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 10px 15px;
+            margin: -0.5rem -1rem 15px -1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
-        .top-navbar-title { font-size: 18px; font-weight: 600; color: #ffffff; }
+        .admin-navbar-brand { font-size: 20px; font-weight: 700; }
+        .admin-navbar-user { font-size: 13px; font-weight: 600; }
 
-        .breadcrumb-container {
-            font-size: 13px; color: #6c757d; margin-bottom: 15px; font-weight: 500;
+        /* Sidebar Styling AdminLTE */
+        section[data-testid="stSidebar"] { background-color: #222d32 !important; width: 250px !important; }
+        section[data-testid="stSidebar"] * { color: #b8c7ce !important; }
+        .user-panel { padding: 15px 10px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1a2226; }
+        .user-avatar { width: 45px; height: 45px; border-radius: 50%; background: #3c8dbc; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; }
+        .user-info { font-size: 13px; font-weight: 600; color: #fff !important; }
+        .user-status { font-size: 11px; color: #00a65a !important; }
+
+        /* AdminLTE Info Box / Small Box Cards */
+        .small-box {
+            border-radius: 3px; position: relative; display: block; margin-bottom: 15px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1); color: #ffffff !important; padding: 12px 15px;
+        }
+        .small-box-green { background-color: #00a65a !important; }
+        .small-box-blue { background-color: #00c0ef !important; }
+        .small-box-orange { background-color: #f39c12 !important; }
+        .small-box-black { background-color: #222d32 !important; }
+        .small-box-red { background-color: #dd4b39 !important; }
+        
+        .small-box .inner h3 { font-size: 18px; font-weight: bold; margin: 0 0 5px 0; white-space: nowrap; padding: 0; color: #fff !important;}
+        .small-box .inner p { font-size: 12px; margin: 0; color: #fff !important; opacity: 0.9; }
+        .small-box .icon-bg { position: absolute; top: 10px; right: 10px; z-index: 0; font-size: 40px; color: rgba(0, 0, 0, 0.15); }
+        .small-box-footer {
+            position: relative; text-align: center; padding: 3px 0; color: rgba(255, 255, 255, 0.8) !important;
+            display: block; z-index: 10; background: rgba(0, 0, 0, 0.1); text-decoration: none; font-size: 11px; margin: 8px -15px -12px -15px;
+            border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;
         }
 
-        /* Sidebar Styling */
-        section[data-testid="stSidebar"] { background-color: #2c323f !important; width: 260px !important; }
-        section[data-testid="stSidebar"] * { color: #c2c7d0 !important; }
-        .sidebar-brand { padding: 15px; border-bottom: 1px solid #3f4756; display: flex; align-items: center; gap: 10px; }
-        .sidebar-brand-title { font-size: 16px; font-weight: 700; color: #ffffff !important; }
-
-        /* Metric Cards */
-        .card-stat { border-radius: 8px; color: #ffffff; padding: 15px 18px; position: relative; margin-bottom: 15px; }
-        .card-stat-blue { background: linear-gradient(135deg, #2196f3, #1e88e5); }
-        .card-stat-green { background: linear-gradient(135deg, #4caf50, #43a047); }
-        .card-stat-red { background: linear-gradient(135deg, #f44336, #e53935); }
-        .card-val { font-size: 22px; font-weight: 700; }
-        .card-lbl { font-size: 12px; opacity: 0.9; }
-
-        .content-card {
-            background-color: #ffffff; border-radius: 8px; padding: 20px;
-            border: 1px solid #e2e8f0; margin-bottom: 20px;
+        /* Container Card */
+        .box-container {
+            background: #ffffff; border-top: 3px solid #3c8dbc; border-radius: 3px;
+            padding: 15px; margin-bottom: 20px; box-shadow: 0 1px 1px rgba(0,0,0,0.1);
         }
-        .content-card-title {
-            font-size: 15px; font-weight: 600; color: #2c323f;
-            margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;
-        }
+        .box-header { font-size: 16px; font-weight: 600; color: #444; border-bottom: 1px solid #f4f4f4; padding-bottom: 8px; margin-bottom: 12px; }
 
-        /* ATURAN CETAK A4 PRESISI (REVISI TERAKHIR) */
+        /* Hilangkan Tombol Stepper +/- pada Number Input */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* FORMAT CETAK A4 100% PRESISI & TAJAM */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 12mm 15mm 12mm 15mm;
+                margin: 10mm 12mm 10mm 12mm;
             }
 
             section[data-testid="stSidebar"], 
-            header, footer, .top-navbar, .breadcrumb-container,
+            header, footer, .admin-navbar,
             .stButton, .no-print, [data-testid="stTabs"],
             div[data-testid="stVerticalBlock"] > div:has(.no-print) {
                 display: none !important;
@@ -114,30 +134,16 @@ st.markdown("""
             }
         }
 
-        /* Wadah Dokumen Laporan */
+        /* Document Container A4 */
         .pdf-page {
-            background: #ffffff;
-            color: #000000;
-            padding: 25px 35px;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9pt;
-            line-height: 1.35;
-            border: 1px solid #cbd5e1;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin: 0 auto 20px auto;
-            max-width: 210mm;
+            background: #ffffff; color: #000000; padding: 20px 30px;
+            font-family: Arial, Helvetica, sans-serif; font-size: 9pt; line-height: 1.35;
+            border: 1px solid #d2d6de; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin: 0 auto 20px auto; max-width: 210mm;
         }
+        .pdf-header-code { font-size: 10pt; font-weight: bold; margin-bottom: 8px; }
+        .pdf-title { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 12px; line-height: 1.35; }
 
-        .pdf-header-code { font-size: 10pt; font-weight: bold; margin-bottom: 10px; }
-        .pdf-title {
-            text-align: center; font-weight: bold; font-size: 11pt;
-            text-transform: uppercase; margin-bottom: 15px; line-height: 1.35;
-        }
-
-        .report-table {
-            width: 100%; border-collapse: collapse; font-size: 9pt;
-            color: #000000; table-layout: fixed;
-        }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000000; table-layout: fixed; }
         .report-table td { padding: 2px 3px; vertical-align: top; }
         .report-table .num-col { width: 4%; text-align: left; }
         .report-table .label-col { width: 56%; }
@@ -149,20 +155,28 @@ st.markdown("""
         .bold { font-weight: bold !important; }
         .indent-1 { padding-left: 18px !important; }
 
-        .ttd-wrapper { margin-top: 30px; width: 100%; display: flex; justify-content: flex-end; }
+        .ttd-wrapper { margin-top: 25px; width: 100%; display: flex; justify-content: flex-end; }
         .ttd-box { width: 280px; text-align: center; font-size: 9pt; color: #000000; float: right; }
-        .page-footer { margin-top: 20px; text-align: right; font-size: 8.5pt; color: #000000; }
+        .page-footer { margin-top: 15px; text-align: right; font-size: 8.5pt; color: #000000; }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper Format Angka dengan Koma Sesuai Contoh Foto 3
+# Helper Format Angka
+def fmt_rupiah(val):
+    try:
+        return f"Rp. {float(val):,.0f},-".replace(",", ".")
+    except:
+        return "Rp. 0,-"
+
 def fmt_num(val):
     try:
         return f"{float(val):,.0f}"
     except:
         return "0"
 
-# Inisialisasi Database
+# -----------------------------------------------------------------------------
+# 3. DATABASE MANAGEMENT
+# -----------------------------------------------------------------------------
 def init_db():
     conn = sqlite3.connect("wartelsus_pos.db")
     c = conn.cursor()
@@ -178,15 +192,16 @@ def init_db():
     """)
     conn.commit()
 
+    # Data Default jika Database Masih Kosong
     c.execute("SELECT COUNT(*) FROM transaksi")
     if c.fetchone()[0] == 0:
         default_tx = [
-            ("2026-08-31", "PENDAPATAN", "PENDAPATAN WARTEL", "PENDAPATAN WARTEL AGUSTUS", 59000000.0),
+            ("2026-08-31", "PENDAPATAN", "PENDAPATAN", "PENDAPATAN WARTEL AGUSTUS", 59000000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "PULSA PASCA BAYAR", 2960000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "INTERNET", 1005000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "ATK", 0.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "PPH 23 (2%)", 1180000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP s.d JULI 2027", 300000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP", 300000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "SERVER", 2243110.0),
             ("2026-08-31", "BIAYA", "LAIN-LAIN", "ANGSURAN PC WARTEL 8", 1000000.0),
             ("2026-08-31", "BIAYA", "LAIN-LAIN", "INSENTIF JAGA KANTIN AGUSTUS 2026", 450000.0),
@@ -198,135 +213,247 @@ def init_db():
 
 init_db()
 
-# Navigation Sidebar
+# -----------------------------------------------------------------------------
+# 4. SIDEBAR & NAVBAR UTAMA
+# -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
-        <div class="sidebar-brand">
-            <div style="font-size: 22px;">🏢</div>
+        <div class="user-panel">
+            <div class="user-avatar">👤</div>
             <div>
-                <div class="sidebar-brand-title">WARTELSUS POS</div>
-                <div style="font-size: 11px; color: #9aa0ac;">Lapas Narkotika Yogyakarta</div>
+                <div class="user-info">Ahmad Jhony</div>
+                <div class="user-status">● Online</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
-
-    menu = st.radio("NAVIGATION", ["Dashboard", "Transaksi POS", "Laporan Keuangan"], index=2)
+    
+    st.markdown('<div style="padding: 8px 12px; font-size: 11px; font-weight: bold; color: #4b646f;">MAIN NAVIGATION</div>', unsafe_allow_html=True)
+    menu = st.radio("", ["DASHBOARD", "TRANSAKSI POS", "LAPORAN KEUANGAN"], index=0, label_visibility="collapsed")
 
 st.markdown("""
-    <div class="top-navbar no-print">
-        <div class="top-navbar-title">APLIKASI KEUANGAN WARTELSUS & POS</div>
-        <div style="font-size: 12px; opacity: 0.9;">Tahun Anggaran 2026</div>
+    <div class="admin-navbar no-print">
+        <div class="admin-navbar-brand">KeuanganApp</div>
+        <div class="admin-navbar-user">Ahmad Jhony - administrator | 🔒 LOGOUT</div>
     </div>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1. DASHBOARD
+# 1. MENU: DASHBOARD (PERSISI DENGAN CONTOH 1 - ADMINLTE)
 # -----------------------------------------------------------------------------
-if menu == "Dashboard":
-    st.markdown('<div class="breadcrumb-container no-print">Home » Dashboard Utama</div>', unsafe_allow_html=True)
+if menu == "DASHBOARD":
+    st.markdown("""
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;" class="no-print">
+            <span style="font-size:20px; font-weight:600; color:#333;">Dashboard <small style="font-size:12px; color:#777;">Control panel</small></span>
+            <span style="font-size:12px; color:#777;">🏠 Home > Dashboard</span>
+        </div>
+    """, unsafe_allow_html=True)
 
     conn = sqlite3.connect("wartelsus_pos.db")
     df_all = pd.read_sql_query("SELECT * FROM transaksi", conn)
     conn.close()
 
-    tot_in = df_all[df_all['jenis'] == 'PENDAPATAN']['nominal'].sum()
-    tot_out = df_all[df_all['jenis'] == 'BIAYA']['nominal'].sum()
-    laba = tot_in - tot_out
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    month_str = datetime.now().strftime("%Y-%m")
+    year_str = datetime.now().strftime("%Y")
 
-    c1, c2, c3 = st.columns(3)
+    # Perhitungan Metrik AdminLTE
+    df_in = df_all[df_all['jenis'] == 'PENDAPATAN']
+    df_out = df_all[df_all['jenis'] == 'BIAYA']
+
+    in_today = df_in[df_in['tanggal'] == today_str]['nominal'].sum()
+    in_month = df_in[df_in['tanggal'].str.startswith(month_str)]['nominal'].sum()
+    in_year = df_in[df_in['tanggal'].str.startswith(year_str)]['nominal'].sum()
+    in_total = df_in['nominal'].sum()
+
+    out_today = df_out[df_out['tanggal'] == today_str]['nominal'].sum()
+    out_month = df_out[df_out['tanggal'].str.startswith(month_str)]['nominal'].sum()
+    out_year = df_out[df_out['tanggal'].str.startswith(year_str)]['nominal'].sum()
+    out_total = df_out['nominal'].sum()
+
+    # Baris 1: Pemasukan Cards (Sesuai Warna & Tata Letak Contoh 1)
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(f'<div class="card-stat card-stat-blue"><div class="card-lbl">TOTAL PENDAPATAN</div><div class="card-val">Rp {fmt_num(tot_in)}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+            <div class="small-box small-box-green">
+                <div class="inner"><h3>{fmt_rupiah(in_today)}</h3><p>Pemasukan Hari Ini</p></div>
+                <div class="icon-bg">📊</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
     with c2:
-        st.markdown(f'<div class="card-stat card-stat-red"><div class="card-lbl">TOTAL BIAYA OPERASIONAL</div><div class="card-val">Rp {fmt_num(tot_out)}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+            <div class="small-box small-box-blue">
+                <div class="inner"><h3>{fmt_rupiah(in_month)}</h3><p>Pemasukan Bulan Ini</p></div>
+                <div class="icon-bg">📊</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
     with c3:
-        st.markdown(f'<div class="card-stat card-stat-green"><div class="card-lbl">LABA BERSIH (NET)</div><div class="card-val">Rp {fmt_num(laba)}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+            <div class="small-box small-box-orange">
+                <div class="inner"><h3>{fmt_rupiah(in_year)}</h3><p>Pemasukan Tahun Ini</p></div>
+                <div class="icon-bg">📊</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
+    with c4:
+        st.markdown(f'''
+            <div class="small-box small-box-black">
+                <div class="inner"><h3>{fmt_rupiah(in_total)}</h3><p>Seluruh Pemasukan</p></div>
+                <div class="icon-bg">📊</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
 
-    st.markdown('<div class="content-card">', unsafe_allow_html=True)
-    st.markdown('<div class="content-card-title">Ringkasan Grafik Keuangan</div>', unsafe_allow_html=True)
-    if not df_all.empty:
-        df_chart = df_all.groupby('jenis')['nominal'].sum().reset_index()
-        fig = px.bar(df_chart, x='jenis', y='nominal', color='jenis', title="Pendapatan vs Pengeluaran", text_auto=True)
-        st.plotly_chart(fig, use_container_width=True)
+    # Baris 2: Pengeluaran Cards (Merah & Gelap)
+    c5, c6, c7, c8 = st.columns(4)
+    with c5:
+        st.markdown(f'''
+            <div class="small-box small-box-red">
+                <div class="inner"><h3>{fmt_rupiah(out_today)}</h3><p>Pengeluaran Hari Ini</p></div>
+                <div class="icon-bg">📉</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
+    with c6:
+        st.markdown(f'''
+            <div class="small-box small-box-red">
+                <div class="inner"><h3>{fmt_rupiah(out_month)}</h3><p>Pengeluaran Bulan Ini</p></div>
+                <div class="icon-bg">📉</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
+    with c7:
+        st.markdown(f'''
+            <div class="small-box small-box-red">
+                <div class="inner"><h3>{fmt_rupiah(out_year)}</h3><p>Pengeluaran Tahun Ini</p></div>
+                <div class="icon-bg">📉</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
+    with c8:
+        st.markdown(f'''
+            <div class="small-box small-box-black">
+                <div class="inner"><h3>{fmt_rupiah(out_total)}</h3><p>Seluruh Pengeluaran</p></div>
+                <div class="icon-bg">📉</div>
+                <div class="small-box-footer">More info ➔</div>
+            </div>''', unsafe_allow_html=True)
+
+    # Section Grafik & Kalender Samping (Sesuai Gambar 1)
+    col_chart, col_cal = st.columns([7, 3])
+    with col_chart:
+        st.markdown('<div class="box-container"><div class="box-header">Grafik Data Pemasukan & Pengeluaran Per Bulan</div>', unsafe_allow_html=True)
+        if not df_all.empty:
+            df_chart = df_all.groupby(['jenis'])['nominal'].sum().reset_index()
+            fig = px.bar(df_chart, x='jenis', y='nominal', color='jenis',
+                         color_discrete_map={'PENDAPATAN': '#00a65a', 'BIAYA': '#dd4b39'},
+                         text_auto=True)
+            fig.update_layout(height=280, margin=dict(l=10, r=10, t=10, b=10))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Belum ada data transaksi.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col_cal:
+        st.markdown('<div class="box-container"><div class="box-header" style="background:#00a65a; color:#fff; padding:6px 10px; margin:-15px -15px 10px -15px;">📅 Kalender</div>', unsafe_allow_html=True)
+        now = datetime.now()
+        cal_html = calendar.HTMLCalendar().formatmonth(now.year, now.month)
+        st.markdown(f"<div style='font-size:12px;'>{cal_html}</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 2. MENU: TRANSAKSI POS (LOGIKA PERBAIKAN 5)
+# -----------------------------------------------------------------------------
+elif menu == "TRANSAKSI POS":
+    st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
+
+    # 1. Pilih Jenis Transaksi
+    jenis_selected = st.selectbox("Jenis Transaksi", ["PENDAPATAN", "BIAYA"])
+
+    # 2. Dinamis Kategori berdasarkan Jenis Transaksi
+    if jenis_selected == "PENDAPATAN":
+        kategori_options = ["PENDAPATAN"]
     else:
-        st.info("Belum ada data transaksi.")
+        kategori_options = ["OPERASIONAL", "LAIN-LAIN"]
+
+    kategori_selected = st.selectbox("Kategori Transaksi", kategori_options)
+
+    # 3. Dropdown Keterangan + Opsi Tambah Baru
+    preset_keterangan = [
+        "PENDAPATAN WARTEL",
+        "PULSA PASCA BAYAR",
+        "INTERNET",
+        "PNBP",
+        "SERVER",
+        "ATK",
+        "PPH 23 (2%)",
+        "ANGSURAN PC WARTEL",
+        "INSENTIF JAGA KANTIN",
+        "LAIN-LAIN (CHARGER + KABEL TYPE C)",
+        "+ Tambah Keterangan Baru..."
+    ]
+
+    ket_choice = st.selectbox("Pilih / Tambah Keterangan Transaksi", preset_keterangan)
+
+    if ket_choice == "+ Tambah Keterangan Baru...":
+        ket_final = st.text_input("Ketikkan Keterangan Baru:")
+    else:
+        ket_final = ket_choice
+
+    col_tgl, col_nom = st.columns(2)
+    with col_tgl:
+        tgl_transaksi = st.date_input("Tanggal Transaksi", datetime.now())
+    with col_nom:
+        # Menggunakan format bersih tanpa tombol +/- (stepper disembunyikan CSS)
+        nominal_val = st.number_input("Nominal (Rp)", min_value=0.0, step=500.0, format="%.0f")
+
+    if st.button("💾 Simpan Transaksi POS", type="primary"):
+        if nominal_val > 0 and ket_final.strip() != "":
+            conn = sqlite3.connect("wartelsus_pos.db")
+            c = conn.cursor()
+            c.execute("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)",
+                      (tgl_transaksi.strftime('%Y-%m-%d'), jenis_selected, kategori_selected, ket_final, nominal_val))
+            conn.commit()
+            conn.close()
+            st.success("✅ Transaksi berhasil disimpan!")
+            st.rerun()
+        else:
+            st.warning("⚠️ Mohon lengkapi nominal dan keterangan transaksi.")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
-# 2. TRANSAKSI POS
-# -----------------------------------------------------------------------------
-elif menu == "Transaksi POS":
-    st.markdown('<div class="breadcrumb-container no-print">Home » Transaksi POS & Input Data</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="content-card">', unsafe_allow_html=True)
-    st.markdown('<div class="content-card-title">Tambah Transaksi Baru</div>', unsafe_allow_html=True)
-    
-    with st.form("form_tx", clear_on_submit=True):
-        f1, f2 = st.columns(2)
-        with f1:
-            tgl = st.date_input("Tanggal Transaksi", datetime.now())
-            jenis = st.selectbox("Jenis Transaksi", ["PENDAPATAN", "BIAYA"])
-            kategori = st.selectbox("Kategori", ["OPERASIONAL", "LAIN-LAIN", "PENDAPATAN WARTEL"])
-        with f2:
-            ket = st.text_input("Keterangan", placeholder="Detail nama pengeluaran/pendapatan")
-            nominal = st.number_input("Nominal (Rp)", min_value=0.0, step=1000.0)
-
-        btn_simpan = st.form_submit_button("💾 Simpan Transaksi", type="primary")
-
-        if btn_simpan:
-            if nominal > 0 and ket.strip() != "":
-                conn = sqlite3.connect("wartelsus_pos.db")
-                c = conn.cursor()
-                c.execute("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)",
-                          (tgl.strftime('%Y-%m-%d'), jenis, kategori, ket, nominal))
-                conn.commit()
-                conn.close()
-                st.success("Transaksi berhasil disimpan!")
-                st.rerun()
-            else:
-                st.warning("Mohon isi keterangan dan nominal dengan benar.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="content-card">', unsafe_allow_html=True)
-    st.markdown('<div class="content-card-title">Riwayat Transaksi Terbaru</div>', unsafe_allow_html=True)
+    # Tabel Riwayat Transaksi
+    st.markdown('<div class="box-container"><div class="box-header">Riwayat Transaksi Terdaftar</div>', unsafe_allow_html=True)
     conn = sqlite3.connect("wartelsus_pos.db")
-    df_tx = pd.read_sql_query("SELECT id, tanggal, jenis, kategori, keterangan, nominal FROM transaksi ORDER BY id DESC", conn)
+    df_riwayat = pd.read_sql_query("SELECT id, tanggal, jenis, kategori, keterangan, nominal FROM transaksi ORDER BY id DESC", conn)
     conn.close()
 
-    st.dataframe(df_tx, use_container_width=True)
+    st.dataframe(df_riwayat, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. LAPORAN KEUANGAN (REVISI TERAKHIR SESUAI CONTOH GAMBAR 3)
+# 3. MENU: LAPORAN KEUANGAN (FILTER BULAN BERJALAN & A4 PRESISI TAJAM)
 # -----------------------------------------------------------------------------
-elif menu == "Laporan Keuangan":
-    st.markdown('<div class="breadcrumb-container no-print">Home » Cetak Laporan Fisik A4</div>', unsafe_allow_html=True)
+elif menu == "LAPORAN KEUANGAN":
+    st.markdown('<div class="no-print"><div class="box-container"><div class="box-header">Filter Periode Laporan Keuangan</div>', unsafe_allow_html=True)
+    
+    c_f1, c_f2, c_f3 = st.columns([3, 3, 4])
+    bulan_dict = {
+        "JANUARI": "01", "FEBRUARI": "02", "MARET": "03", "APRIL": "04",
+        "MEI": "05", "JUNI": "06", "JULI": "07", "AGUSTUS": "08",
+        "SEPTEMBER": "09", "OKTOBER": "10", "NOVEMBER": "11", "DESEMBER": "12"
+    }
 
-    with st.container():
-        st.markdown('<div class="no-print"><div class="content-card">', unsafe_allow_html=True)
-        st.markdown('<div class="content-card-title">Filter Periode Laporan Cetak</div>', unsafe_allow_html=True)
+    with c_f1:
+        sel_bulan_nama = st.selectbox("BULAN LAPORAN", list(bulan_dict.keys()), index=7)
+        sel_bulan_kode = bulan_dict[sel_bulan_nama]
+    with c_f2:
+        sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
+    with c_f3:
+        sel_tgl_cetak = st.date_input("TANGGAL DOKUMEN CETAK", datetime(2026, 9, 2))
         
-        c_f1, c_f2, c_f3 = st.columns([3, 3, 4])
-        bulan_dict = {
-            "JANUARI": "01", "FEBRUARI": "02", "MARET": "03", "APRIL": "04",
-            "MEI": "05", "JUNI": "06", "JULI": "07", "AGUSTUS": "08",
-            "SEPTEMBER": "09", "OKTOBER": "10", "NOVEMBER": "11", "DESEMBER": "12"
-        }
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
-        with c_f1:
-            sel_bulan_nama = st.selectbox("BULAN LAPORAN", list(bulan_dict.keys()), index=7)
-            sel_bulan_kode = bulan_dict[sel_bulan_nama]
-        with c_f2:
-            sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
-        with c_f3:
-            sel_tgl_cetak = st.date_input("TANGGAL CETAK", datetime(2026, 9, 2))
-            
-        st.markdown('</div></div>', unsafe_allow_html=True)
-
+    # Filter Database Berdasarkan Bulan Berjalan yang Dipilih
     periode_query = f"{sel_tahun}-{sel_bulan_kode}"
     conn = sqlite3.connect("wartelsus_pos.db")
     df_filtered = pd.read_sql_query("SELECT * FROM transaksi WHERE strftime('%Y-%m', tanggal) = ?", conn, params=(periode_query,))
     conn.close()
 
+    # Kalkulasi Laporan Keuangan Bulan Berjalan
     pendapatan_tot = df_filtered[df_filtered['jenis'] == 'PENDAPATAN']['nominal'].sum()
     df_biaya_all = df_filtered[df_filtered['jenis'] == 'BIAYA']
     biaya_tot = df_biaya_all['nominal'].sum()
@@ -346,16 +473,15 @@ elif menu == "Laporan Keuangan":
     muffaindo2 = 0.60 * laba_bersih
 
     st.markdown('<div class="no-print" style="margin-bottom:15px;">', unsafe_allow_html=True)
-    st.button("🖨️ CETAK / PRINT DOKUMEN LAPORAN A4", type="primary", use_container_width=True, 
+    st.button("🖨️ PRINT DOKUMEN LAPORAN A4 (PRESISI 100%)", type="primary", use_container_width=True, 
               on_click=lambda: st.components.v1.html("<script>window.parent.print();</script>", height=0))
     st.markdown('</div>', unsafe_allow_html=True)
 
     tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laba Rugi", "📄 Halaman 2 - Jasa Video Call"])
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    # HALAMAN 1 (PRESISI DENGAN PISAHAN SUB-KATEGORI)
+    # HALAMAN 1 (PRESISI DENGAN DATA BULAN BERJALAN)
     with tab_h1:
-        # Pisahkan item Operasional & Lain-Lain secara terstruktur
         df_ops_items = df_biaya_all[df_biaya_all['kategori'] != 'LAIN-LAIN'].to_dict('records')
         df_lain_items = df_biaya_all[df_biaya_all['kategori'] == 'LAIN-LAIN'].to_dict('records')
 
@@ -401,7 +527,7 @@ elif menu == "Laporan Keuangan":
                 </tr>
                 <tr><td colspan="5" style="height:6px;"></td></tr>
                 <tr class="bold"><td colspan="5">BIAYA OPERASIONAL:</td></tr>
-                {biaya_rows_h1}
+                {biaya_rows_h1 if biaya_rows_h1 != '' else '<tr><td>-</td><td colspan="4">Tidak ada data biaya</td></tr>'}
                 <tr class="bold">
                     <td colspan="2">TOTAL BIAYA OPERASIONAL</td>
                     <td class="sep-col">:</td>
@@ -448,7 +574,7 @@ elif menu == "Laporan Keuangan":
         </div>"""
         st.markdown(html_h1, unsafe_allow_html=True)
 
-    # HALAMAN 2 (100% PERSISI SESUAI FOTO FILE TERAKHIR / KE-3)
+    # HALAMAN 2 (100% SESUAI CONTOH FOTO CETAK)
     with tab_h2:
         df_ops_h2 = df_biaya_all[df_biaya_all['kategori'] != 'LAIN-LAIN'].to_dict('records')
         df_lain_h2 = df_biaya_all[df_biaya_all['kategori'] == 'LAIN-LAIN'].to_dict('records')

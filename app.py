@@ -15,6 +15,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# Initialize Active Menu State if not present
+if "active_menu" not in st.session_state:
+    st.session_state.active_menu = "DASHBOARD"
+
 # -----------------------------------------------------------------------------
 # 2. DATABASE MANAGEMENT
 # -----------------------------------------------------------------------------
@@ -109,7 +113,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 4. CSS STYLING & PENYEMBUNYIAN TOOLBAR & STYLING SIDEBAR
+# 4. CSS STYLING
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -254,14 +258,9 @@ st.markdown("""
         .small-box-black { background-color: #222d32 !important; }
         .small-box-red { background-color: #dd4b39 !important; }
         
-        .small-box .inner h3 { font-size: 18px; font-weight: bold; margin: 0 0 5px 0; white-space: nowrap; padding: 0; color: #fff !important;}
+        .small-box .inner h3 { font-size: 17px; font-weight: bold; margin: 0 0 5px 0; white-space: nowrap; padding: 0; color: #fff !important;}
         .small-box .inner p { font-size: 12px; margin: 0; color: #fff !important; opacity: 0.9; }
-        .small-box .icon-bg { position: absolute; top: 10px; right: 10px; z-index: 0; font-size: 40px; color: rgba(0, 0, 0, 0.15); }
-        .small-box-footer {
-            position: relative; text-align: center; padding: 3px 0; color: rgba(255, 255, 255, 0.8) !important;
-            display: block; z-index: 10; background: rgba(0, 0, 0, 0.1); text-decoration: none; font-size: 11px; margin: 8px -15px -12px -15px;
-            border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;
-        }
+        .small-box .icon-bg { position: absolute; top: 10px; right: 10px; z-index: 0; font-size: 38px; color: rgba(0, 0, 0, 0.15); }
 
         .box-container {
             background: #ffffff; border-top: 3px solid #3c8dbc; border-radius: 3px;
@@ -275,19 +274,24 @@ st.markdown("""
             margin: 0; 
         }
         input[type=number] { -moz-appearance: textfield; }
+        
+        /* Tombol info kustom */
+        .stButton>button {
+            border-radius: 3px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper Format Angka
+# Helper Format Akuntansi (Ribuan)
 def fmt_rupiah(val):
     try:
-        return f"Rp. {float(val):,.0f},-".replace(",", ".")
+        return f"Rp {float(val):,.0f}".replace(",", ".")
     except:
-        return "Rp. 0,-"
+        return "Rp 0"
 
 def fmt_num(val):
     try:
-        return f"{float(val):,.0f}"
+        return f"{float(val):,.0f}".replace(",", ".")
     except:
         return "0"
 
@@ -320,16 +324,25 @@ with st.sidebar:
             "📄 LAPORAN KEUANGAN"
         ]
 
-    selected_menu = st.radio("", menu_options, index=0, label_visibility="collapsed")
+    # Temukan index menu aktif
+    default_idx = 0
+    for idx, opt in enumerate(menu_options):
+        if st.session_state.active_menu in opt:
+            default_idx = idx
+            break
+
+    selected_menu = st.radio("", menu_options, index=default_idx, label_visibility="collapsed")
     
     if "DASHBOARD" in selected_menu:
-        menu = "DASHBOARD"
+        st.session_state.active_menu = "DASHBOARD"
     elif "TRANSAKSI POS" in selected_menu:
-        menu = "TRANSAKSI POS"
+        st.session_state.active_menu = "TRANSAKSI POS"
     elif "DATA PENGGUNA" in selected_menu:
-        menu = "DATA PENGGUNA"
+        st.session_state.active_menu = "DATA PENGGUNA"
     elif "LAPORAN KEUANGAN" in selected_menu:
-        menu = "LAPORAN KEUANGAN"
+        st.session_state.active_menu = "LAPORAN KEUANGAN"
+
+    menu = st.session_state.active_menu
 
     st.write("---")
     if st.button("🚪 LOGOUT", use_container_width=True):
@@ -377,25 +390,57 @@ if menu == "DASHBOARD":
     out_year = df_out[df_out['tanggal'].str.startswith(year_str)]['nominal'].sum()
     out_total = df_out['nominal'].sum()
 
+    # PEMASUKAN BOXES
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(f'<div class="small-box small-box-green"><div class="inner"><h3>{fmt_rupiah(in_today)}</h3><p>Pemasukan Hari Ini</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown(f'<div class="small-box small-box-blue"><div class="inner"><h3>{fmt_rupiah(in_month)}</h3><p>Pemasukan Bulan Ini</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
-    with c3:
-        st.markdown(f'<div class="small-box small-box-orange"><div class="inner"><h3>{fmt_rupiah(in_year)}</h3><p>Pemasukan Tahun Ini</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
-    with c4:
-        st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(in_total)}</h3><p>Seluruh Pemasukan</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-green"><div class="inner"><h3>{fmt_rupiah(in_today)}</h3><p>Pemasukan Hari Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_in_today", use_container_width=True):
+            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
+            st.rerun()
 
+    with c2:
+        st.markdown(f'<div class="small-box small-box-blue"><div class="inner"><h3>{fmt_rupiah(in_month)}</h3><p>Pemasukan Bulan Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_in_month", use_container_width=True):
+            st.session_state.active_menu = "LAPORAN KEUANGAN"
+            st.rerun()
+
+    with c3:
+        st.markdown(f'<div class="small-box small-box-orange"><div class="inner"><h3>{fmt_rupiah(in_year)}</h3><p>Pemasukan Tahun Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_in_year", use_container_width=True):
+            st.session_state.active_menu = "LAPORAN KEUANGAN"
+            st.rerun()
+
+    with c4:
+        st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(in_total)}</h3><p>Seluruh Pemasukan</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_in_total", use_container_width=True):
+            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
+            st.rerun()
+
+    # PENGELUARAN BOXES
     c5, c6, c7, c8 = st.columns(4)
     with c5:
-        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_today)}</h3><p>Pengeluaran Hari Ini</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_today)}</h3><p>Pengeluaran Hari Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_out_today", use_container_width=True):
+            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
+            st.rerun()
+
     with c6:
-        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_month)}</h3><p>Pengeluaran Bulan Ini</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_month)}</h3><p>Pengeluaran Bulan Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_out_month", use_container_width=True):
+            st.session_state.active_menu = "LAPORAN KEUANGAN"
+            st.rerun()
+
     with c7:
-        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_year)}</h3><p>Pengeluaran Tahun Ini</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_year)}</h3><p>Pengeluaran Tahun Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_out_year", use_container_width=True):
+            st.session_state.active_menu = "LAPORAN KEUANGAN"
+            st.rerun()
+
     with c8:
-        st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(out_total)}</h3><p>Seluruh Pengeluaran</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(out_total)}</h3><p>Seluruh Pengeluaran</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
+        if st.button("More info ➔", key="btn_out_total", use_container_width=True):
+            st.session_state.active_menu = "TRANSAKSI POS" if st.session_state.role == "Admin" else "LAPORAN KEUANGAN"
+            st.rerun()
 
     col_chart, col_cal = st.columns([7, 3])
     with col_chart:
@@ -418,14 +463,13 @@ if menu == "DASHBOARD":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. MENU: TRANSAKSI POS (UPDATE REVISI 6.A: ATURAN LOGIKA KATEGORI & KETERANGAN)
+# 2. MENU: TRANSAKSI POS (FORMAT ANGKA AKUNTANSI RIBUAN)
 # -----------------------------------------------------------------------------
 elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
 
     jenis_selected = st.selectbox("Jenis Transaksi", ["PENDAPATAN", "BIAYA"])
 
-    # LOGIKA SESUAI REVISI 6.A
     if jenis_selected == "BIAYA":
         kategori_options = ["OPERASIONAL", "LAIN-LAIN"]
         preset_keterangan = [
@@ -440,7 +484,7 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
             "PERBAIKAN / PEMELIHARAAN ALAT",
             "+ Tambah Keterangan Baru..."
         ]
-    else:  # PENDAPATAN
+    else:
         kategori_options = ["PENDAPATAN WARTELSUS"]
         preset_keterangan = [
             "PENDAPATAN WARTELSUS",
@@ -461,14 +505,16 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     with col_tgl:
         tgl_transaksi = st.date_input("Tanggal Transaksi", datetime.now())
     with col_nom:
-        nominal_val = st.number_input("Nominal (Rp)", min_value=0.0, step=500.0, format="%.0f")
+        # Input Nominal Format Akuntansi
+        nominal_raw = st.number_input("Nominal Transaksi (Rp)", min_value=0, step=10000, value=100000)
+        st.caption(f"Format Akuntansi: **{fmt_rupiah(nominal_raw)}**")
 
     if st.button("💾 Simpan Transaksi POS", type="primary"):
-        if nominal_val > 0 and ket_final.strip() != "":
+        if nominal_raw > 0 and ket_final.strip() != "":
             conn = sqlite3.connect("wartelsus_pos.db")
             c = conn.cursor()
             c.execute("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)",
-                      (tgl_transaksi.strftime('%Y-%m-%d'), jenis_selected, kategori_selected, ket_final, nominal_val))
+                      (tgl_transaksi.strftime('%Y-%m-%d'), jenis_selected, kategori_selected, ket_final, float(nominal_raw)))
             conn.commit()
             conn.close()
             st.success("✅ Transaksi berhasil disimpan!")
@@ -482,7 +528,15 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     conn = sqlite3.connect("wartelsus_pos.db")
     df_riwayat = pd.read_sql_query("SELECT id, tanggal, jenis, kategori, keterangan, nominal FROM transaksi ORDER BY id DESC", conn)
     conn.close()
-    st.dataframe(df_riwayat, use_container_width=True)
+    
+    # Apply format ribuan akuntansi pada kolom nominal dataframe
+    if not df_riwayat.empty:
+        df_riwayat_display = df_riwayat.copy()
+        df_riwayat_display['nominal'] = df_riwayat_display['nominal'].apply(lambda x: fmt_rupiah(x))
+        st.dataframe(df_riwayat_display, use_container_width=True)
+    else:
+        st.info("Belum ada data transaksi.")
+        
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------

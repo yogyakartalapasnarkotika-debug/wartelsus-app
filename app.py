@@ -58,11 +58,11 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM transaksi")
     if c.fetchone()[0] == 0:
         default_tx = [
-            ("2026-08-31", "PENDAPATAN", "PENDAPATAN", "PENDAPATAN WARTEL AGUSTUS", 59000000.0),
+            ("2026-08-31", "PENDAPATAN", "PENDAPATAN WARTELSUS", "PENDAPATAN WARTELSUS AGUSTUS", 59000000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "PULSA PASCA BAYAR", 2960000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "INTERNET", 1005000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "TAGIHAN TELEPON & INTERNET", 1005000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "ATK", 0.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PPH 23 (2%)", 1180000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PAJAK (PPH 23 2%)", 1180000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP", 300000.0),
             ("2026-08-31", "BIAYA", "OPERASIONAL", "SERVER", 2243110.0),
             ("2026-08-31", "BIAYA", "LAIN-LAIN", "ANGSURAN PC WARTEL 8", 1000000.0),
@@ -109,7 +109,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 4. CSS STYLING & PENYEMBUNYIAN TOOLBAR (POINT 3) & STYLING SIDEBAR (POINT 4)
+# 4. CSS STYLING & PENYEMBUNYIAN TOOLBAR & STYLING SIDEBAR
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -120,7 +120,7 @@ st.markdown("""
             background-color: #f4f6f9 !important;
         }
 
-        /* HILANGKAN FLOATING TOOLBAR DATAFRAME/TABLE (POINT 3) */
+        /* HILANGKAN FLOATING TOOLBAR DATAFRAME */
         [data-testid="stElementToolbar"], 
         .stElementToolbar,
         div[data-testid="stDataFrameResizable"] > div:first-child > div:nth-child(2) {
@@ -157,7 +157,7 @@ st.markdown("""
         .admin-navbar-brand { font-size: 20px; font-weight: 700; }
         .admin-navbar-user { font-size: 13px; font-weight: 600; }
 
-        /* DESAIN SIDEBAR SESUAI CONTOH GAMBAR 2 (POINT 4) */
+        /* DESAIN SIDEBAR */
         section[data-testid="stSidebar"] { 
             background-color: #222d32 !important; 
             width: 250px !important; 
@@ -220,7 +220,6 @@ st.markdown("""
             letter-spacing: 0.5px;
         }
 
-        /* CUSTOM RADIO RADIO MENU AGAR TERLIHAT SEPERTI SIDEBAR ADMINLTE */
         div[data-testid="stRadio"] > div {
             gap: 2px !important;
         }
@@ -293,7 +292,7 @@ def fmt_num(val):
         return "0"
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR & MENU DESAIN DESAIN TERBARU (POINT 4)
+# 5. SIDEBAR & NAVIGATION
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown(f"""
@@ -323,7 +322,6 @@ with st.sidebar:
 
     selected_menu = st.radio("", menu_options, index=0, label_visibility="collapsed")
     
-    # Mapping nama menu untuk logika internal
     if "DASHBOARD" in selected_menu:
         menu = "DASHBOARD"
     elif "TRANSAKSI POS" in selected_menu:
@@ -420,27 +418,38 @@ if menu == "DASHBOARD":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. MENU: TRANSAKSI POS
+# 2. MENU: TRANSAKSI POS (UPDATE REVISI 6.A: ATURAN LOGIKA KATEGORI & KETERANGAN)
 # -----------------------------------------------------------------------------
 elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
 
     jenis_selected = st.selectbox("Jenis Transaksi", ["PENDAPATAN", "BIAYA"])
 
-    if jenis_selected == "PENDAPATAN":
-        kategori_options = ["PENDAPATAN"]
-    else:
+    # LOGIKA SESUAI REVISI 6.A
+    if jenis_selected == "BIAYA":
         kategori_options = ["OPERASIONAL", "LAIN-LAIN"]
+        preset_keterangan = [
+            "PAJAK (PPH 23 2%)",
+            "PNBP",
+            "TAGIHAN TELEPON & INTERNET",
+            "SERVER",
+            "ATK",
+            "PULSA PASCA BAYAR",
+            "ANGSURAN PC WARTEL",
+            "INSENTIF JAGA KANTIN",
+            "PERBAIKAN / PEMELIHARAAN ALAT",
+            "+ Tambah Keterangan Baru..."
+        ]
+    else:  # PENDAPATAN
+        kategori_options = ["PENDAPATAN WARTELSUS"]
+        preset_keterangan = [
+            "PENDAPATAN WARTELSUS",
+            "PENDAPATAN VIDEO CALL",
+            "PENDAPATAN LAIN-LAIN",
+            "+ Tambah Keterangan Baru..."
+        ]
 
     kategori_selected = st.selectbox("Kategori Transaksi", kategori_options)
-
-    preset_keterangan = [
-        "PENDAPATAN WARTEL", "PULSA PASCA BAYAR", "INTERNET", "PNBP",
-        "SERVER", "ATK", "PPH 23 (2%)", "ANGSURAN PC WARTEL",
-        "INSENTIF JAGA KANTIN", "LAIN-LAIN (CHARGER + KABEL TYPE C)",
-        "+ Tambah Keterangan Baru..."
-    ]
-
     ket_choice = st.selectbox("Pilih / Tambah Keterangan Transaksi", preset_keterangan)
 
     if ket_choice == "+ Tambah Keterangan Baru...":
@@ -477,7 +486,7 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. MENU: DATA PENGGUNA (UPDATE POINT 2: FITUR EDIT & HAPUS USER)
+# 3. MENU: DATA PENGGUNA
 # -----------------------------------------------------------------------------
 elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Pendaftaran User Baru</div>', unsafe_allow_html=True)
@@ -508,7 +517,6 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # DAFTAR PENGGUNA DENGAN MENU EDIT DAN HAPUS (POINT 2)
     st.markdown('<div class="box-container"><div class="box-header">Daftar Pengguna Sistem & Aksi (Edit / Hapus)</div>', unsafe_allow_html=True)
     
     conn = sqlite3.connect("wartelsus_pos.db")
@@ -517,7 +525,6 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     users_list = c.fetchall()
     conn.close()
 
-    # Tabel Header Custom
     st.markdown("""
         <table style="width:100%; border-collapse:collapse; font-size:13px; font-weight:bold; margin-bottom:10px;">
             <tr style="background:#f4f6f9; border-bottom:2px solid #ddd; text-align:left;">
@@ -549,7 +556,6 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
             with btn_col2:
                 del_pressed = st.button("🗑️", key=f"del_btn_{u_id}", help="Hapus User")
 
-        # Form Edit (Toggle saat tombol edit ditekan)
         if f"show_edit_{u_id}" not in st.session_state:
             st.session_state[f"show_edit_{u_id}"] = False
 
@@ -575,7 +581,6 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
                     st.session_state[f"show_edit_{u_id}"] = False
                     st.rerun()
 
-        # Konfirmasi Hapus
         if del_pressed:
             if u_user == st.session_state.username:
                 st.error("⚠️ Anda tidak bisa menghapus akun anda sendiri yang sedang digunakan!")
@@ -617,13 +622,11 @@ elif menu == "LAPORAN KEUANGAN":
         
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Filter Data Transaksi
     periode_query = f"{sel_tahun}-{sel_bulan_kode}"
     conn = sqlite3.connect("wartelsus_pos.db")
     df_filtered = pd.read_sql_query("SELECT * FROM transaksi WHERE strftime('%Y-%m', tanggal) = ?", conn, params=(periode_query,))
     conn.close()
 
-    # Perhitungan Matematika Laporan
     pendapatan_tot = df_filtered[df_filtered['jenis'] == 'PENDAPATAN']['nominal'].sum()
     df_biaya_all = df_filtered[df_filtered['jenis'] == 'BIAYA']
     biaya_tot = df_biaya_all['nominal'].sum()

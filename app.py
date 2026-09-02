@@ -45,7 +45,7 @@ def init_db():
         )
     """)
     
-    # User Default Admin & User Regular jika kosong
+    # User Default
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
         default_users = [
@@ -54,7 +54,7 @@ def init_db():
         ]
         c.executemany("INSERT INTO users (username, password, nama_lengkap, role) VALUES (?, ?, ?, ?)", default_users)
     
-    # Data Default Transaksi jika Kosong
+    # Data Default Transaksi
     c.execute("SELECT COUNT(*) FROM transaksi")
     if c.fetchone()[0] == 0:
         default_tx = [
@@ -202,7 +202,7 @@ def fmt_num(val):
         return "0"
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR & MENU SESUAI ROLE
+# 5. SIDEBAR & MENU
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown(f"""
@@ -217,11 +217,9 @@ with st.sidebar:
     
     st.markdown('<div style="padding: 8px 12px; font-size: 11px; font-weight: bold; color: #4b646f;">MAIN NAVIGATION</div>', unsafe_allow_html=True)
     
-    # Pengaturan Akses Menu Berdasarkan Role
     if st.session_state.role == "Admin":
         menu_options = ["DASHBOARD", "TRANSAKSI POS", "DATA PENGGUNA", "LAPORAN KEUANGAN"]
     else:
-        # Pendaftaran user & transaksi tersembunyi untuk Non-Admin
         menu_options = ["DASHBOARD", "LAPORAN KEUANGAN"]
 
     menu = st.radio("", menu_options, index=0, label_visibility="collapsed")
@@ -313,7 +311,7 @@ if menu == "DASHBOARD":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. MENU: TRANSAKSI POS (KHUSUS ADMIN)
+# 2. MENU: TRANSAKSI POS
 # -----------------------------------------------------------------------------
 elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
@@ -370,7 +368,7 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. MENU: DATA PENGGUNA (PENDAFTARAN USER BARU - KHUSUS ADMIN)
+# 3. MENU: DATA PENGGUNA
 # -----------------------------------------------------------------------------
 elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Pendaftaran User Baru</div>', unsafe_allow_html=True)
@@ -409,12 +407,12 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 4. MENU: LAPORAN KEUANGAN (RENDER HTML TAJAM & PRINT A4 FIXED)
+# 4. MENU: LAPORAN KEUANGAN (REVISI 5.B: MARGIN Gambar 1 & LAYOUT HALAMAN 2)
 # -----------------------------------------------------------------------------
 elif menu == "LAPORAN KEUANGAN":
-    st.markdown('<div class="box-container"><div class="box-header">Filter Periode Laporan Keuangan</div>', unsafe_allow_html=True)
+    st.markdown('<div class="box-container"><div class="box-header">Filter & Parameter Cetak Laporan</div>', unsafe_allow_html=True)
     
-    c_f1, c_f2, c_f3 = st.columns([3, 3, 4])
+    c_f1, c_f2, c_f3, c_f4 = st.columns([2.5, 2.5, 3, 4])
     bulan_dict = {
         "JANUARI": "01", "FEBRUARI": "02", "MARET": "03", "APRIL": "04",
         "MEI": "05", "JUNI": "06", "JULI": "07", "AGUSTUS": "08",
@@ -428,16 +426,18 @@ elif menu == "LAPORAN KEUANGAN":
         sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
     with c_f3:
         sel_tgl_cetak = st.date_input("TANGGAL DOKUMEN CETAK", datetime(2026, 9, 2))
+    with c_f4:
+        nama_ttd = st.text_input("NAMA PENANDATANGAN / KETUA", value="DANANG ANDRIYANTO")
         
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Filter Database Berdasarkan Bulan Berjalan
+    # Filter Data Transaksi
     periode_query = f"{sel_tahun}-{sel_bulan_kode}"
     conn = sqlite3.connect("wartelsus_pos.db")
     df_filtered = pd.read_sql_query("SELECT * FROM transaksi WHERE strftime('%Y-%m', tanggal) = ?", conn, params=(periode_query,))
     conn.close()
 
-    # Perhitungan Laporan
+    # Perhitungan Matematika Laporan
     pendapatan_tot = df_filtered[df_filtered['jenis'] == 'PENDAPATAN']['nominal'].sum()
     df_biaya_all = df_filtered[df_filtered['jenis'] == 'BIAYA']
     biaya_tot = df_biaya_all['nominal'].sum()
@@ -459,14 +459,21 @@ elif menu == "LAPORAN KEUANGAN":
     tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laba Rugi", "📄 Halaman 2 - Jasa Video Call"])
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    # Template CSS Khusus Print A4 & Render HTML
+    # REVISI MARGIN PRESISI SESUAI GAMBAR 1 (Top/Bottom 2.54cm, Left/Right 1.5cm)
     doc_style = """
     <style>
-        @page { size: A4 portrait; margin: 10mm 12mm 10mm 12mm; }
+        @page { 
+            size: A4 portrait; 
+            margin-top: 2.54cm; 
+            margin-bottom: 2.54cm; 
+            margin-left: 1.5cm; 
+            margin-right: 1.5cm; 
+        }
         body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin:0; padding:0; background:#fff; }
-        .pdf-page { width: 100%; max-width: 210mm; background: #fff; padding: 10px; box-sizing: border-box; }
+        .pdf-page { width: 100%; max-width: 210mm; background: #fff; padding: 0; box-sizing: border-box; }
         .pdf-header-code { font-size: 10pt; font-weight: bold; margin-bottom: 8px; }
         .pdf-title { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 12px; line-height: 1.3; }
+        
         .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000; table-layout: fixed; }
         .report-table td { padding: 2px 3px; vertical-align: top; }
         .num-col { width: 4%; text-align: left; }
@@ -474,12 +481,15 @@ elif menu == "LAPORAN KEUANGAN":
         .sep-col { width: 3%; text-align: center; }
         .currency-col { width: 7%; text-align: left; }
         .val-col { width: 30%; text-align: right; }
+        
         .text-right { text-align: right !important; }
         .bold { font-weight: bold !important; }
         .indent-1 { padding-left: 18px !important; }
-        .ttd-wrapper { margin-top: 25px; width: 100%; display: flex; justify-content: flex-end; }
+        
+        .ttd-wrapper { margin-top: 15px; width: 100%; display: flex; justify-content: flex-end; }
         .ttd-box { width: 280px; text-align: center; font-size: 9pt; color: #000; float: right; }
-        .page-footer { margin-top: 15px; text-align: right; font-size: 8.5pt; color: #000; }
+        .page-footer { margin-top: 10px; text-align: right; font-size: 8.5pt; color: #000; }
+        
         .btn-print { background-color: #00a65a; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
         @media print { .btn-print { display: none !important; } }
     </style>
@@ -571,10 +581,9 @@ elif menu == "LAPORAN KEUANGAN":
         </body>
         </html>
         """
-        # Render HTML menggunakan komponen native Streamlit
         components.html(html_h1, height=950, scrolling=True)
 
-    # HALAMAN 2
+    # HALAMAN 2 (REVISI POSISI PENDAPATAN SEBELAH KANAN & PENGELUARAN SEBELAH KIRI BAWAH)
     with tab_h2:
         df_ops_h2 = df_biaya_all[df_biaya_all['kategori'] != 'LAIN-LAIN'].to_dict('records')
         df_lain_h2 = df_biaya_all[df_biaya_all['kategori'] == 'LAIN-LAIN'].to_dict('records')
@@ -605,62 +614,65 @@ elif menu == "LAPORAN KEUANGAN":
                     JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
                 </div>
 
+                <!-- DUA KOLOM: KIRI KOSONG/CATATAN, KANAN PENDAPATAN I & II -->
                 <table class="report-table">
                     <tr>
                         <td style="width: 50%; vertical-align: top; padding-right: 15px;">
-                            <div class="bold">PENDAPATAN 1:</div>
+                            <!-- Kosong di sisi kiri atas -->
+                        </td>
+                        <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+                            <div class="bold">PENDAPATAN I:</div>
                             <table class="report-table">
                                 <tr><td style="width: 40%;">KBU 1</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 2</td><td>Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 3</td><td>Rp</td><td class="text-right">0</td></tr>
-                                <tr class="bold"><td>TOTAL</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
+                                <tr class="bold"><td>TOTAL I</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
                             </table>
-                        </td>
-                        <td style="width: 50%; vertical-align: top; padding-left: 15px;">
-                            <div class="bold">PENDAPATAN II:</div>
+                            
+                            <div class="bold" style="margin-top: 6px;">PENDAPATAN II:</div>
                             <table class="report-table">
                                 <tr><td style="width: 40%;">KBU 4</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 5</td><td>Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 6</td><td>Rp</td><td class="text-right">0</td></tr>
-                                <tr class="bold"><td>TOTAL</td><td>Rp</td><td class="text-right">0</td></tr>
+                                <tr class="bold"><td>TOTAL II</td><td>Rp</td><td class="text-right">0</td></tr>
+                            </table>
+
+                            <table class="report-table" style="margin-top: 6px; border-top: 1px solid #000;">
+                                <tr class="bold">
+                                    <td style="width: 50%;">TOTAL PENDAPATAN</td>
+                                    <td style="width: 10%;">Rp</td>
+                                    <td class="text-right">{fmt_num(pendapatan_tot)}</td>
+                                </tr>
                             </table>
                         </td>
                     </tr>
                 </table>
 
-                <br>
-                <table class="report-table">
-                    <tr class="bold">
-                        <td style="width: 50%; vertical-align: top; padding-right: 15px;">PENGELUARAN:</td>
-                        <td style="width: 50%; vertical-align: top; padding-left: 15px;">&nbsp;</td>
-                    </tr>
-                    <tr>
-                        <td style="vertical-align: top; padding-right: 15px;">
-                            <table class="report-table">
-                                <tr><td style="width: 50%;">PENDAPATAN I</td><td style="width: 10%;">Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
-                                <tr><td>PENDAPATAN II</td><td>Rp</td><td class="text-right">0</td></tr>
-                                <tr class="bold"><td>TOTAL PENDAPATAN</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
-                            </table>
-                        </td>
-                        <td style="vertical-align: top; padding-left: 15px;">
-                            <table class="report-table">
-                                {rows_ops_h2}
-                                <tr class="bold"><td colspan="3" style="padding-top:4px;">LAIN-LAIN:</td></tr>
-                                {rows_lain_h2}
-                                <tr class="bold"><td style="padding-top:6px;">TOTAL PENGELUARAN</td><td style="padding-top:6px;">Rp</td><td class="text-right" style="padding-top:6px;">{fmt_num(biaya_tot)}</td></tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
+                <!-- SEBALAH KIRI BAWAH PENDAPATAN: PENGELUARAN -->
+                <div style="margin-top: 10px;">
+                    <table class="report-table">
+                        <tr>
+                            <td style="width: 60%; vertical-align: top; padding-right: 15px;">
+                                <div class="bold" style="margin-bottom: 4px;">PENGELUARAN:</div>
+                                <table class="report-table">
+                                    {rows_ops_h2}
+                                    <tr class="bold"><td colspan="3" style="padding-top:4px;">LAIN-LAIN:</td></tr>
+                                    {rows_lain_h2}
+                                </table>
+                            </td>
+                            <td style="width: 40%;"></td>
+                        </tr>
+                    </table>
+                </div>
 
-                <br>
-                <table class="report-table">
+                <!-- TOTAL PENGELUARAN & LABA BERSIH -->
+                <table class="report-table" style="margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px;">
                     <tr class="bold">
                         <td style="width: 28%;">TOTAL PENGELUARAN</td>
                         <td style="width: 3%;">:</td>
                         <td style="width: 5%;">Rp</td>
-                        <td class="text-right" style="width: 20%;">{fmt_num(biaya_tot)}</td>
-                        <td style="width: 44%;"></td>
+                        <td class="text-right" style="width: 24%;">{fmt_num(biaya_tot)}</td>
+                        <td style="width: 40%;"></td>
                     </tr>
                     <tr class="bold">
                         <td>LABA BERSIH</td>
@@ -671,32 +683,32 @@ elif menu == "LAPORAN KEUANGAN":
                     </tr>
                 </table>
 
-                <br>
-                <div class="bold" style="margin-bottom: 5px;">PEMBAGIAN BAGI HASIL:</div>
-                <table class="report-table">
+                <!-- PEMBAGIAN HASIL (JARAK DISESUAIKAN BERDEKATAN) -->
+                <div class="bold" style="margin-top: 10px; margin-bottom: 3px;">PEMBAGIAN BAGI HASIL:</div>
+                <table class="report-table" style="line-height: 1.2;">
                     <tr>
-                        <td style="width: 20%;">PROFIT SHRING</td>
+                        <td style="width: 20%;">PROFIT SHARING</td>
                         <td style="width: 8%;">20%</td>
                         <td style="width: 3%;">X</td>
                         <td style="width: 18%;">{fmt_num(laba_bersih)}</td>
                         <td class="text-right">{fmt_num(primkopasindo)} (PRIMKOPASINDO)</td>
                     </tr>
                     <tr>
-                        <td>PROFIT SHRING</td>
+                        <td>PROFIT SHARING</td>
                         <td>10%</td>
                         <td>X</td>
                         <td>{fmt_num(laba_bersih)}</td>
                         <td class="text-right">{fmt_num(porsi_kalapas)} (PENGAWAS UPT)</td>
                     </tr>
                     <tr>
-                        <td>PROFIT SHRING</td>
+                        <td>PROFIT SHARING</td>
                         <td>10%</td>
                         <td>X</td>
                         <td>{fmt_num(laba_bersih)}</td>
                         <td class="text-right">{fmt_num(porsi_inkopasindo)} (INKOPASINDO)</td>
                     </tr>
                     <tr>
-                        <td>PROFIT SHRING</td>
+                        <td>PROFIT SHARING</td>
                         <td>60%</td>
                         <td>X</td>
                         <td>{fmt_num(laba_bersih)}</td>
@@ -709,13 +721,14 @@ elif menu == "LAPORAN KEUANGAN":
                     </tr>
                 </table>
 
+                <!-- TANDA TANGAN (NAMA DINAMIS SESUAI INPUT) -->
                 <div class="ttd-wrapper">
                     <div class="ttd-box">
                         <div>{tgl_ttd_str}</div>
                         <div>Penanggungjawab</div>
                         <div class="bold" style="margin-top:2px;">KETUA KOPERASI</div>
-                        <br><br><br>
-                        <div class="bold" style="text-decoration: underline;">DANANG ANDRIYANTO</div>
+                        <br><br>
+                        <div class="bold" style="text-decoration: underline;">{nama_ttd.upper()}</div>
                     </div>
                 </div>
 

@@ -20,100 +20,7 @@ if "active_menu" not in st.session_state:
     st.session_state.active_menu = "DASHBOARD"
 
 # -----------------------------------------------------------------------------
-# 2. DATABASE MANAGEMENT
-# -----------------------------------------------------------------------------
-def init_db():
-    conn = sqlite3.connect("wartelsus_pos.db")
-    c = conn.cursor()
-    
-    # Tabel Transaksi
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS transaksi (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tanggal TEXT,
-            jenis TEXT,
-            kategori TEXT,
-            keterangan TEXT,
-            nominal REAL
-        )
-    """)
-    
-    # Tabel Users
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT,
-            nama_lengkap TEXT,
-            role TEXT
-        )
-    """)
-    
-    # User Default
-    c.execute("SELECT COUNT(*) FROM users")
-    if c.fetchone()[0] == 0:
-        default_users = [
-            ("admin", "admin123", "Ahmad Jhony", "Admin"),
-            ("user1", "user123", "Staf Keuangan", "User")
-        ]
-        c.executemany("INSERT INTO users (username, password, nama_lengkap, role) VALUES (?, ?, ?, ?)", default_users)
-    
-    # Data Default Transaksi
-    c.execute("SELECT COUNT(*) FROM transaksi")
-    if c.fetchone()[0] == 0:
-        default_tx = [
-            ("2026-08-31", "PENDAPATAN", "PENDAPATAN WARTELSUS", "PENDAPATAN WARTELSUS AGUSTUS", 59000000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PULSA PASCA BAYAR", 2960000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "TAGIHAN TELEPON & INTERNET", 1005000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "ATK", 0.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PAJAK (PPH 23 2%)", 1180000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP", 300000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "SERVER", 2243110.0),
-            ("2026-08-31", "BIAYA", "LAIN-LAIN", "ANGSURAN PC WARTEL 8", 1000000.0),
-            ("2026-08-31", "BIAYA", "LAIN-LAIN", "INSENTIF JAGA KANTIN AGUSTUS 2026", 450000.0),
-            ("2026-08-31", "BIAYA", "LAIN-LAIN", "LAIN-LAIN (CHARGER + KABEL TYPE C)", 300000.0)
-        ]
-        c.executemany("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)", default_tx)
-        
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# -----------------------------------------------------------------------------
-# 3. SESI AUTENTIKASI & LOGIN
-# -----------------------------------------------------------------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.nama_lengkap = ""
-    st.session_state.role = ""
-
-if not st.session_state.logged_in:
-    st.markdown("<h2 style='text-align: center; margin-top: 50px;'>Login KeuanganApp</h2>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        username_input = st.text_input("Username")
-        password_input = st.text_input("Password", type="password")
-        if st.button("LOG IN", type="primary", use_container_width=True):
-            conn = sqlite3.connect("wartelsus_pos.db")
-            c = conn.cursor()
-            c.execute("SELECT username, nama_lengkap, role FROM users WHERE username=? AND password=?", (username_input, password_input))
-            user = c.fetchone()
-            conn.close()
-            
-            if user:
-                st.session_state.logged_in = True
-                st.session_state.username = user[0]
-                st.session_state.nama_lengkap = user[1]
-                st.session_state.role = user[2]
-                st.rerun()
-            else:
-                st.error("Username atau password salah!")
-    st.stop()
-
-# -----------------------------------------------------------------------------
-# 4. CSS STYLING & HELPER FUNCTIONS
+# 2. GLOBAL CSS STYLING (Dipindah ke atas agar langsung aktif di halaman Login)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -124,15 +31,35 @@ st.markdown("""
             background-color: #f4f6f9 !important;
         }
 
-        /* HILANGKAN FOOTER, "HOSTED WITH STREAMLIT", DAN STATUS BADGE */
+        /* HILANGKAN FOOTER, HEADER TOOLBAR, SERTA TOMBOL "MANAGE APP" STREAMLIT CLOUD */
         footer, 
+        header, 
+        [data-testid="stHeader"], 
+        [data-testid="stToolbar"],
         [data-testid="stStatusWidget"],
+        [data-testid="stAppDeployButton"],
         .viewerBadge_container__1A51w,
         div[class*="viewerBadge"],
-        a[href*="streamlit.io"] {
+        a[href*="streamlit.io"],
+        .stAppHeader, 
+        #MainMenu,
+        /* Target khusus tombol "Manage app" dan iframe platform */
+        div[class*="manageApp"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stSidebarCollapseButton"] + div,
+        iframe[title="manage-app"] {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
+            height: 0px !important;
+            width: 0px !important;
+            pointer-events: none !important;
+        }
+
+        /* Sembunyikan elemen paling bawah kanan khusus Streamlit Cloud Toolbar */
+        div[style*="bottom: 0"], 
+        div[style*="position: fixed"][style*="bottom"] {
+            display: none !important;
         }
 
         /* HILANGKAN FLOATING TOOLBAR DATAFRAME */
@@ -142,13 +69,6 @@ st.markdown("""
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
-        }
-
-        header, [data-testid="stHeader"], [data-testid="stToolbar"],
-        .stAppHeader, #MainMenu {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0px !important;
         }
 
         .main .block-container {
@@ -258,7 +178,7 @@ st.markdown("""
             border-left: 3px solid #3c8dbc !important;
         }
 
-        /* BOX COMPONENTS TANPA MORE INFO */
+        /* BOX COMPONENTS */
         .small-box {
             border-radius: 3px; position: relative; display: block; margin-bottom: 15px;
             box-shadow: 0 1px 1px rgba(0,0,0,0.1); color: #ffffff !important; padding: 18px 15px;
@@ -288,7 +208,102 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Helper Format Akuntansi Rupiah & Angka
+# -----------------------------------------------------------------------------
+# 3. DATABASE MANAGEMENT
+# -----------------------------------------------------------------------------
+def init_db():
+    conn = sqlite3.connect("wartelsus_pos.db")
+    c = conn.cursor()
+    
+    # Tabel Transaksi
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS transaksi (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tanggal TEXT,
+            jenis TEXT,
+            kategori TEXT,
+            keterangan TEXT,
+            nominal REAL
+        )
+    """)
+    
+    # Tabel Users
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            nama_lengkap TEXT,
+            role TEXT
+        )
+    """)
+    
+    # User Default
+    c.execute("SELECT COUNT(*) FROM users")
+    if c.fetchone()[0] == 0:
+        default_users = [
+            ("admin", "admin123", "Ahmad Jhony", "Admin"),
+            ("user1", "user123", "Staf Keuangan", "User")
+        ]
+        c.executemany("INSERT INTO users (username, password, nama_lengkap, role) VALUES (?, ?, ?, ?)", default_users)
+    
+    # Data Default Transaksi
+    c.execute("SELECT COUNT(*) FROM transaksi")
+    if c.fetchone()[0] == 0:
+        default_tx = [
+            ("2026-08-31", "PENDAPATAN", "PENDAPATAN WARTELSUS", "PENDAPATAN WARTELSUS AGUSTUS", 59000000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PULSA PASCA BAYAR", 2960000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "TAGIHAN TELEPON & INTERNET", 1005000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "ATK", 0.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PAJAK (PPH 23 2%)", 1180000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP", 300000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "SERVER", 2243110.0),
+            ("2026-08-31", "BIAYA", "LAIN-LAIN", "ANGSURAN PC WARTEL 8", 1000000.0),
+            ("2026-08-31", "BIAYA", "LAIN-LAIN", "INSENTIF JAGA KANTIN AGUSTUS 2026", 450000.0),
+            ("2026-08-31", "BIAYA", "LAIN-LAIN", "LAIN-LAIN (CHARGER + KABEL TYPE C)", 300000.0)
+        ]
+        c.executemany("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)", default_tx)
+        
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# -----------------------------------------------------------------------------
+# 4. SESI AUTENTIKASI & LOGIN
+# -----------------------------------------------------------------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.session_state.nama_lengkap = ""
+    st.session_state.role = ""
+
+if not st.session_state.logged_in:
+    st.markdown("<h2 style='text-align: center; margin-top: 50px;'>Login KeuanganApp</h2>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        username_input = st.text_input("Username")
+        password_input = st.text_input("Password", type="password")
+        if st.button("LOG IN", type="primary", use_container_width=True):
+            conn = sqlite3.connect("wartelsus_pos.db")
+            c = conn.cursor()
+            c.execute("SELECT username, nama_lengkap, role FROM users WHERE username=? AND password=?", (username_input, password_input))
+            user = c.fetchone()
+            conn.close()
+            
+            if user:
+                st.session_state.logged_in = True
+                st.session_state.username = user[0]
+                st.session_state.nama_lengkap = user[1]
+                st.session_state.role = user[2]
+                st.rerun()
+            else:
+                st.error("Username atau password salah!")
+    st.stop()
+
+# -----------------------------------------------------------------------------
+# 5. HELPER FUNCTIONS
+# -----------------------------------------------------------------------------
 def fmt_rupiah(val):
     try:
         return f"Rp {float(val):,.0f}".replace(",", ".")
@@ -302,7 +317,7 @@ def fmt_num(val):
         return "0"
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR & NAVIGATION
+# 6. SIDEBAR & NAVIGATION
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown(f"""
@@ -364,7 +379,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1. MENU: DASHBOARD
+# 7. MENU: DASHBOARD
 # -----------------------------------------------------------------------------
 if menu == "DASHBOARD":
     st.markdown("""
@@ -386,43 +401,33 @@ if menu == "DASHBOARD":
     df_in = df_all[df_all['jenis'] == 'PENDAPATAN']
     df_out = df_all[df_all['jenis'] == 'BIAYA']
 
-    # Akumulasi Pemasukan
     in_today = df_in[df_in['tanggal'] <= today_str]['nominal'].sum()
     in_month = df_in[df_in['tanggal'].str.startswith(month_str) & (df_in['tanggal'] <= today_str)]['nominal'].sum()
     in_year = df_in[df_in['tanggal'].str.startswith(year_str) & (df_in['tanggal'] <= today_str)]['nominal'].sum()
     in_total = df_in['nominal'].sum()
 
-    # Akumulasi Pengeluaran
     out_today = df_out[df_out['tanggal'] <= today_str]['nominal'].sum()
     out_month = df_out[df_out['tanggal'].str.startswith(month_str) & (df_out['tanggal'] <= today_str)]['nominal'].sum()
     out_year = df_out[df_out['tanggal'].str.startswith(year_str) & (df_out['tanggal'] <= today_str)]['nominal'].sum()
     out_total = df_out['nominal'].sum()
 
-    # PEMASUKAN BOXES (TANPA TULISAN/TOMBOL MORE INFO)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f'<div class="small-box small-box-green"><div class="inner"><h3>{fmt_rupiah(in_today)}</h3><p>Pemasukan Hari Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
-
     with c2:
         st.markdown(f'<div class="small-box small-box-blue"><div class="inner"><h3>{fmt_rupiah(in_month)}</h3><p>Pemasukan Bulan Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
-
     with c3:
         st.markdown(f'<div class="small-box small-box-orange"><div class="inner"><h3>{fmt_rupiah(in_year)}</h3><p>Pemasukan Tahun Ini</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
-
     with c4:
         st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(in_total)}</h3><p>Seluruh Pemasukan</p></div><div class="icon-bg">📊</div></div>', unsafe_allow_html=True)
 
-    # PENGELUARAN BOXES (TANPA TULISAN/TOMBOL MORE INFO)
     c5, c6, c7, c8 = st.columns(4)
     with c5:
         st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_today)}</h3><p>Pengeluaran Hari Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
-
     with c6:
         st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_month)}</h3><p>Pengeluaran Bulan Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
-
     with c7:
         st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_year)}</h3><p>Pengeluaran Tahun Ini</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
-
     with c8:
         st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(out_total)}</h3><p>Seluruh Pengeluaran</p></div><div class="icon-bg">📉</div></div>', unsafe_allow_html=True)
 
@@ -446,7 +451,7 @@ if menu == "DASHBOARD":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. MENU: TRANSAKSI POS
+# 8. MENU: TRANSAKSI POS
 # -----------------------------------------------------------------------------
 elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
@@ -513,10 +518,8 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     
     if not df_riwayat.empty:
         df_riwayat_display = df_riwayat.copy()
-        # Format Murni Angka Ribuan Tanpa "Rp"
         df_riwayat_display['nominal'] = df_riwayat_display['nominal'].apply(lambda x: fmt_num(x))
         
-        # Konfigurasi Kolom dengan Rata Kanan pada Nominal
         st.dataframe(
             df_riwayat_display,
             column_config={
@@ -525,11 +528,7 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
                 "jenis": "Jenis",
                 "kategori": "Kategori",
                 "keterangan": "Keterangan",
-                "nominal": st.column_config.TextColumn(
-                    "Nominal",
-                    help="Nominal Transaksi (Format Ribuan)",
-                    width="medium"
-                )
+                "nominal": st.column_config.TextColumn("Nominal", width="medium")
             },
             use_container_width=True,
             hide_index=True
@@ -540,7 +539,7 @@ elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. MENU: DATA PENGGUNA
+# 9. MENU: DATA PENGGUNA
 # -----------------------------------------------------------------------------
 elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Pendaftaran User Baru</div>', unsafe_allow_html=True)
@@ -652,7 +651,7 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 4. MENU: LAPORAN KEUANGAN
+# 10. MENU: LAPORAN KEUANGAN
 # -----------------------------------------------------------------------------
 elif menu == "LAPORAN KEUANGAN":
     st.markdown('<div class="box-container"><div class="box-header">Filter & Parameter Cetak Laporan</div>', unsafe_allow_html=True)

@@ -20,7 +20,7 @@ if "active_menu" not in st.session_state:
     st.session_state.active_menu = "DASHBOARD"
 
 # -----------------------------------------------------------------------------
-# 2. GLOBAL CSS STYLING (Dipindah ke atas agar langsung aktif di halaman Login)
+# 2. GLOBAL CSS STYLING
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -31,22 +31,24 @@ st.markdown("""
             background-color: #f4f6f9 !important;
         }
 
-        /* HILANGKAN FOOTER, HEADER TOOLBAR, SERTA TOMBOL "MANAGE APP" STREAMLIT CLOUD */
+        /* HILANGKAN SEMUA BADGE STREAMLIT, GITHUB PROFILE, MANAGE APP, DAN FOOTER UNTUK SEMUA USER/BROWSER */
         footer, 
         header, 
         [data-testid="stHeader"], 
         [data-testid="stToolbar"],
         [data-testid="stStatusWidget"],
         [data-testid="stAppDeployButton"],
+        [data-testid="stDecoration"],
+        [data-testid="stSidebarCollapseButton"] + div,
         .viewerBadge_container__1A51w,
         div[class*="viewerBadge"],
+        div[class*="styles_viewerBadge"],
+        div[class*="Profile"],
+        div[class*="manageApp"],
         a[href*="streamlit.io"],
+        a[href*="github.com"],
         .stAppHeader, 
         #MainMenu,
-        /* Target khusus tombol "Manage app" dan iframe platform */
-        div[class*="manageApp"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stSidebarCollapseButton"] + div,
         iframe[title="manage-app"] {
             display: none !important;
             visibility: hidden !important;
@@ -56,9 +58,10 @@ st.markdown("""
             pointer-events: none !important;
         }
 
-        /* Sembunyikan elemen paling bawah kanan khusus Streamlit Cloud Toolbar */
+        /* Target khusus Floating Footer "Hosted with Streamlit" & Github Profile di bagian bawah */
         div[style*="bottom: 0"], 
-        div[style*="position: fixed"][style*="bottom"] {
+        div[style*="position: fixed"],
+        div[class*="stApp"] > div:last-child {
             display: none !important;
         }
 
@@ -717,15 +720,17 @@ elif menu == "LAPORAN KEUANGAN":
         
         .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000; table-layout: fixed; }
         .report-table td { padding: 2px 3px; vertical-align: top; }
-        .num-col { width: 4%; text-align: left; }
-        .label-col { width: 56%; }
+        
+        /* PENYESUAIAN DISINI: Kolom nomor diperketat ukurannya (2%) agar jarak ke keterangan lebih rapat */
+        .num-col { width: 2%; text-align: left; padding-right: 0px !important; }
+        .label-col { width: 58%; padding-left: 2px !important; }
         .sep-col { width: 3%; text-align: center; }
         .currency-col { width: 7%; text-align: left; }
         .val-col { width: 30%; text-align: right; }
         
         .text-right { text-align: right !important; }
         .bold { font-weight: bold !important; }
-        .indent-1 { padding-left: 18px !important; }
+        .indent-1 { padding-left: 14px !important; }
         
         .ttd-wrapper { margin-top: 15px; width: 100%; display: flex; justify-content: flex-end; }
         .ttd-box { width: 280px; text-align: center; font-size: 9pt; color: #000; float: right; }
@@ -767,7 +772,7 @@ elif menu == "LAPORAN KEUANGAN":
 
                 <table class="report-table">
                     <tr class="bold">
-                        <td colspan="2" class="label-col">TOTAL PENDAPATAN</td>
+                        <td colspan="2" class="label-col" style="padding-left:0 !important;">TOTAL PENDAPATAN</td>
                         <td class="sep-col">:</td>
                         <td class="currency-col">Rp</td>
                         <td class="val-col">{fmt_num(pendapatan_tot)}</td>
@@ -776,14 +781,14 @@ elif menu == "LAPORAN KEUANGAN":
                     <tr class="bold"><td colspan="5">BIAYA OPERASIONAL:</td></tr>
                     {biaya_rows_h1}
                     <tr class="bold">
-                        <td colspan="2">TOTAL BIAYA OPERASIONAL</td>
+                        <td colspan="2" style="padding-left:0 !important;">TOTAL BIAYA OPERASIONAL</td>
                         <td class="sep-col">:</td>
                         <td class="currency-col">Rp</td>
                         <td class="val-col">{fmt_num(biaya_tot)}</td>
                     </tr>
                     <tr><td colspan="5" style="height:6px;"></td></tr>
                     <tr class="bold">
-                        <td colspan="2">PENDAPATAN BERSIH</td>
+                        <td colspan="2" style="padding-left:0 !important;">PENDAPATAN BERSIH</td>
                         <td class="sep-col">:</td>
                         <td class="currency-col">Rp</td>
                         <td class="val-col">{fmt_num(laba_bersih)}</td>
@@ -794,27 +799,27 @@ elif menu == "LAPORAN KEUANGAN":
                     <tr><td class="num-col">2</td><td class="label-col">10% X PENDAPATAN BERSIH (Ka.LAPAS)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_kalapas)}</td></tr>
                     <tr><td class="num-col">3</td><td class="label-col">10% X IURAN 10% UNTUK INKOPASINDO</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_inkopasindo)}</td></tr>
                     <tr><td class="num-col">4</td><td class="label-col">40% X PENDAPATAN BERSIH (MUFAINDO)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_muffaindo)}</td></tr>
-                    <tr class="bold"><td></td><td>TOTAL BAGI HASIL</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(laba_bersih)}</td></tr>
+                    <tr class="bold"><td></td><td class="label-col">TOTAL BAGI HASIL</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(laba_bersih)}</td></tr>
                     <tr><td colspan="5" style="height:8px;"></td></tr>
                     <tr class="bold"><td colspan="5">PENGELUARAN KANTOR:</td></tr>
                     <tr><td class="num-col">1</td><td class="label-col">SHU KOPERASI</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(shu)}</td></tr>
                     <tr><td class="num-col">2</td><td class="label-col">OPERASIONAL KANTOR</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(ops)}</td></tr>
-                    <tr><td class="num-col">3</td><td>UNTUK TU</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                    <tr><td class="num-col">4</td><td>UNTUK BINADIK</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                    <tr><td class="num-col">5</td><td>UNTUK KAMTIB</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                    <tr><td class="num-col">6</td><td>UNTUK GIATJA</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                    <tr><td class="num-col">7</td><td>UNTUK STAF KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                    <tr><td class="num-col">8</td><td colspan="4">UNTUK 4 (Empat) RUPAM</td></tr>
+                    <tr><td class="num-col">3</td><td class="label-col">UNTUK TU</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">4</td><td class="label-col">UNTUK BINADIK</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">5</td><td class="label-col">UNTUK KAMTIB</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">6</td><td class="label-col">UNTUK GIATJA</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">7</td><td class="label-col">UNTUK STAF KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">8</td><td colspan="4" class="label-col">UNTUK 4 (Empat) RUPAM</td></tr>
                     <tr><td></td><td class="indent-1">RUPAM 1</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
                     <tr><td></td><td class="indent-1">RUPAM 2</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
                     <tr><td></td><td class="indent-1">RUPAM 3</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
                     <tr><td></td><td class="indent-1">RUPAM 4</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                    <tr><td class="num-col">9</td><td colspan="4">UNTUK PENGURUS: 4 Pegawai</td></tr>
+                    <tr><td class="num-col">9</td><td colspan="4" class="label-col">UNTUK PENGURUS: 4 Pegawai</td></tr>
                     <tr><td></td><td class="indent-1">AGUS YULIANTO</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
                     <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
                     <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
                     <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
-                    <tr class="bold"><td colspan="2">TOTAL PENGELUARAN KANTOR</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_lapas)}</td></tr>
+                    <tr class="bold"><td colspan="2" style="padding-left:0 !important;">TOTAL PENGELUARAN KANTOR</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_lapas)}</td></tr>
                 </table>
 
                 <div class="page-footer">Hal 1</div>

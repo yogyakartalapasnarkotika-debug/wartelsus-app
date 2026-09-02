@@ -4,79 +4,117 @@ import sqlite3
 import plotly.express as px
 from datetime import datetime
 
-# 1. Konfigurasi Halaman & CSS A4 Print Standard
+# 1. Konfigurasi Halaman
 st.set_page_config(
     page_title="WARTELSUS KPPK - LAPAS NARKOTIKA YOGYAKARTA",
     page_icon="🏢",
     layout="wide"
 )
 
+# 2. CSS Custom: Sembunyikan Header Streamlit & Styling Komponen
 st.markdown("""
     <style>
-        /* Tipografi & Warna Kontras Tinggi */
-        html, body, [class*="css"] {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            color: #0f172a;
+        /* ==========================================
+           1. HILANGKAN TOP HEADER STREAMLIT (100% CLEAN)
+           ========================================== */
+        header, 
+        [data-testid="stHeader"], 
+        [data-testid="stToolbar"],
+        .stAppHeader,
+        #MainMenu,
+        footer {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0px !important;
         }
         
-        .main {
-            background-color: #f1f5f9;
+        /* Mengangkat posisi konten agar tidak ada sisa ruang kosong di atas */
+        .main .block-container {
+            padding-top: 1.5rem !important;
+            padding-bottom: 2rem !important;
         }
 
-        /* Styling Sidebar Kontras */
+        /* ==========================================
+           2. JUDUL HALAMAN UTAMA (BESAR & PROFESIONAL)
+           ========================================== */
+        .page-header {
+            font-size: 34px !important;
+            font-weight: 900 !important;
+            color: #0f172a !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            margin-bottom: 20px !important;
+            border-bottom: 5px solid #0284c7 !important;
+            padding-bottom: 10px !important;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-header {
+            font-size: 22px !important;
+            font-weight: 800 !important;
+            color: #1e293b !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            margin-top: 20px !important;
+            margin-bottom: 15px !important;
+        }
+
+        /* ==========================================
+           3. STYLING SIDEBAR & MENU NAVIGASI
+           ========================================== */
         section[data-testid="stSidebar"] {
             background-color: #0f172a !important;
         }
         section[data-testid="stSidebar"] * {
             color: #ffffff !important;
         }
+        section[data-testid="stSidebar"] .stRadio > div {
+            gap: 10px !important;
+        }
         section[data-testid="stSidebar"] .stRadio label {
             font-size: 16px !important;
-            font-weight: 700 !important;
-            padding: 10px 14px !important;
+            font-weight: 800 !important;
+            padding: 12px 18px !important;
             border-radius: 8px !important;
-            background-color: #1e293b;
-            margin-bottom: 6px;
-            display: block;
+            background-color: #1e293b !important;
+            border: 1px solid #334155 !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease-in-out;
         }
         section[data-testid="stSidebar"] .stRadio label:hover {
             background-color: #0284c7 !important;
+            border-color: #38bdf8 !important;
             color: #ffffff !important;
         }
 
-        /* Metric Cards */
+        /* ==========================================
+           4. METRIC CARDS & CONTAINER
+           ========================================== */
         .metric-box {
             background-color: #ffffff;
             border: 2px solid #cbd5e1;
             border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 22px 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             text-align: center;
         }
-        .metric-title { font-size: 14px; color: #475569; font-weight: 800; text-transform: uppercase; }
-        .metric-value { font-size: 24px; font-weight: 900; margin-top: 8px; }
-
-        /* Judul Kapital & Jelas */
-        .page-header {
-            font-size: 28px;
-            font-weight: 900;
-            color: #0f172a;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
-            border-bottom: 4px solid #0284c7;
-            padding-bottom: 8px;
+        .metric-title { 
+            font-size: 13px; 
+            color: #64748b; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
         }
-        .section-header {
-            font-size: 20px;
-            font-weight: 800;
-            color: #0f172a;
-            text-transform: uppercase;
-            margin-top: 15px;
-            margin-bottom: 15px;
+        .metric-value { 
+            font-size: 26px; 
+            font-weight: 900; 
+            margin-top: 6px; 
         }
 
-        /* Standard Cetak PDF A4 Presisi (210mm x 297mm) */
+        /* ==========================================
+           5. STANDAR CETAK A4 (PRINT)
+           ========================================== */
         @media print {
             @page {
                 size: A4 portrait;
@@ -101,33 +139,20 @@ st.markdown("""
                 box-shadow: none !important;
                 width: 100% !important;
                 background: white !important;
-            }/* Menyembunyikan Header / Toolbar Atas Streamlit */
-header[data-testid="stHeader"] {
-    display: none !important;
-}
-
-/* Menghilangkan tombol opsi tambahan jika masih muncul */
-#MainMenu {
-    visibility: hidden;
-}
-
-/* Menghilangkan footer 'Powered by Streamlit' */
-footer {
-    visibility: hidden;
-}
+            }
         }
 
-        /* Form Laporan Fisik */
+        /* Styling Form/Lembar Laporan Fisik */
         .pdf-page {
             background: #ffffff;
             color: #000000;
             padding: 30px;
             font-family: Arial, sans-serif;
             font-size: 11pt;
-            border: 1px solid #94a3b8;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
             margin-bottom: 20px;
-            border-radius: 4px;
+            border-radius: 6px;
         }
         .pdf-title {
             text-align: center;
@@ -180,7 +205,7 @@ def parse_rupiah(val_str):
     except:
         return 0.0
 
-# 2. Database Management
+# Database Management
 def init_db():
     conn = sqlite3.connect("wartelsus_pos.db")
     c = conn.cursor()
@@ -196,7 +221,7 @@ def init_db():
     """)
     conn.commit()
 
-    # Data Seed Awal
+    # Data Seed Awal (Akan terisi jika DB masih kosong)
     c.execute("SELECT COUNT(*) FROM transaksi")
     if c.fetchone()[0] == 0:
         default_tx = [
@@ -217,7 +242,7 @@ def init_db():
 
 init_db()
 
-# 3. Sidebar Navigation
+# Sidebar Navigation
 with st.sidebar:
     st.markdown("""
         <div style="padding: 10px 0px; text-align: center;">
@@ -248,7 +273,7 @@ if menu == "DASHBOARD":
         tot_biaya = df_tx[df_tx['jenis'] == 'BIAYA']['nominal'].sum()
         laba_bersih = tot_pendapatan - tot_biaya
 
-        # Metrics Card (3 Card tanpa Total Entry Data)
+        # Metric Cards (3 Card)
         m1, m2, m3 = st.columns(3)
         with m1:
             st.markdown(f'<div class="metric-box"><div class="metric-title">TOTAL PENDAPATAN</div><div class="metric-value" style="color:#10b981;">{fmt_rupiah(tot_pendapatan)}</div></div>', unsafe_allow_html=True)
@@ -306,7 +331,6 @@ elif menu == "TRANSAKSI":
 
     tab_in1, tab_in2 = st.tabs(["➕ INPUT TRANSAKSI BARU", "📋 DAFTAR DATA TRANSAKSI"])
 
-    # List Pilihan Kategori Default
     opsi_kategori_default = [
         "TAGIHAN INTERNET",
         "TAGIHAN LISTRIK",
@@ -337,8 +361,7 @@ elif menu == "TRANSAKSI":
 
         with c2:
             ket_input = st.text_input("Keterangan Rincian / Detail Transaksi", placeholder="Contoh: Pembayaran Internet IndiHome Bulan Agustus")
-            
-            nom_raw = st.text_input("Nominal Transaksi (Rp)", value="0", help="Ketik angka tanpa titik. Format otomatis accounting.")
+            nom_raw = st.text_input("Nominal Transaksi (Rp)", value="0")
             nom_float = parse_rupiah(nom_raw)
             st.markdown(f"Nominal Terbilang: **{fmt_rupiah(nom_float)}**")
 
@@ -383,7 +406,7 @@ elif menu == "TRANSAKSI":
                     st.rerun()
 
 # -----------------------------------------------------------------------------
-# MENU 3: LAPORAN (HANYA DATA BULAN YANG DIPILIH)
+# MENU 3: LAPORAN (FILTER BULAN)
 # -----------------------------------------------------------------------------
 elif menu == "LAPORAN":
     st.markdown('<div class="page-header">LAPORAN</div>', unsafe_allow_html=True)
@@ -408,7 +431,7 @@ elif menu == "LAPORAN":
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Filter Data Hanya Berdasarkan Bulan & Tahun yang Dipilih
+    # Query Filter per Bulan & Tahun
     periode_query = f"{sel_tahun}-{sel_bulan_kode}"
     
     conn = sqlite3.connect("wartelsus_pos.db")
@@ -419,7 +442,7 @@ elif menu == "LAPORAN":
     )
     conn.close()
 
-    # Kalkulasi Khusus Bulan Terpilih
+    # Kalkulasi Laporan
     pendapatan_tot = df_filtered[df_filtered['jenis'] == 'PENDAPATAN']['nominal'].sum()
     df_biaya_list = df_filtered[df_filtered['jenis'] == 'BIAYA'].to_dict('records')
     biaya_tot = sum([b['nominal'] for b in df_biaya_list])
@@ -454,7 +477,7 @@ elif menu == "LAPORAN":
 
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    # --- TAB HALAMAN 1 ---
+    # HALAMAN 1
     with tab_h1:
         biaya_rows_h1 = ""
         for idx, b in enumerate(df_biaya_list):
@@ -594,7 +617,7 @@ PERIODE {sel_bulan_nama} {sel_tahun}
 </div>"""
         st.markdown(html_h1, unsafe_allow_html=True)
 
-    # --- TAB HALAMAN 2 ---
+    # HALAMAN 2
     with tab_h2:
         biaya_rows_h2 = ""
         for b in df_biaya_list:

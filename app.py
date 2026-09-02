@@ -407,7 +407,7 @@ elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 4. MENU: LAPORAN KEUANGAN (REVISI 5.B: MARGIN Gambar 1 & LAYOUT HALAMAN 2)
+# 4. MENU: LAPORAN KEUANGAN (REVISI 5.C)
 # -----------------------------------------------------------------------------
 elif menu == "LAPORAN KEUANGAN":
     st.markdown('<div class="box-container"><div class="box-header">Filter & Parameter Cetak Laporan</div>', unsafe_allow_html=True)
@@ -459,7 +459,7 @@ elif menu == "LAPORAN KEUANGAN":
     tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laba Rugi", "📄 Halaman 2 - Jasa Video Call"])
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    # REVISI MARGIN PRESISI SESUAI GAMBAR 1 (Top/Bottom 2.54cm, Left/Right 1.5cm)
+    # MARGIN SESUAI GAMBAR UPLOAD (Top/Bottom 2.54cm, Left/Right 1.5cm)
     doc_style = """
     <style>
         @page { 
@@ -583,7 +583,7 @@ elif menu == "LAPORAN KEUANGAN":
         """
         components.html(html_h1, height=950, scrolling=True)
 
-    # HALAMAN 2 (REVISI POSISI PENDAPATAN SEBELAH KANAN & PENGELUARAN SEBELAH KIRI BAWAH)
+    # HALAMAN 2 (REVISI 5.C: PENDAPATAN 1 & 2 SEJAJAR KIRI KANAN, PENGELUARAN DIBAWAHNYA, BAGI HASIL RAPAT)
     with tab_h2:
         df_ops_h2 = df_biaya_all[df_biaya_all['kategori'] != 'LAIN-LAIN'].to_dict('records')
         df_lain_h2 = df_biaya_all[df_biaya_all['kategori'] == 'LAIN-LAIN'].to_dict('records')
@@ -614,110 +614,115 @@ elif menu == "LAPORAN KEUANGAN":
                     JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
                 </div>
 
-                <!-- DUA KOLOM: KIRI KOSONG/CATATAN, KANAN PENDAPATAN I & II -->
-                <table class="report-table">
+                <!-- PENDAPATAN I DAN PENDAPATAN II SEJAJAR KIRI KANAN -->
+                <table class="report-table" style="margin-bottom: 10px;">
                     <tr>
-                        <td style="width: 50%; vertical-align: top; padding-right: 15px;">
-                            <!-- Kosong di sisi kiri atas -->
-                        </td>
-                        <td style="width: 50%; vertical-align: top; padding-left: 15px;">
-                            <div class="bold">PENDAPATAN I:</div>
+                        <!-- SEBELAH KIRI: PENDAPATAN I -->
+                        <td style="width: 48%; vertical-align: top; padding-right: 10px;">
+                            <div class="bold" style="margin-bottom: 4px;">PENDAPATAN I:</div>
                             <table class="report-table">
-                                <tr><td style="width: 40%;">KBU 1</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
+                                <tr><td style="width: 50%;">KBU 1</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 2</td><td>Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 3</td><td>Rp</td><td class="text-right">0</td></tr>
-                                <tr class="bold"><td>TOTAL I</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
+                                <tr class="bold" style="border-top: 1px solid #ccc;">
+                                    <td>TOTAL I</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td>
+                                </tr>
                             </table>
-                            
-                            <div class="bold" style="margin-top: 6px;">PENDAPATAN II:</div>
+                        </td>
+
+                        <td style="width: 4%;"></td>
+
+                        <!-- SEBELAH KANAN: PENDAPATAN II -->
+                        <td style="width: 48%; vertical-align: top; padding-left: 10px;">
+                            <div class="bold" style="margin-bottom: 4px;">PENDAPATAN II:</div>
                             <table class="report-table">
-                                <tr><td style="width: 40%;">KBU 4</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
+                                <tr><td style="width: 50%;">KBU 4</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 5</td><td>Rp</td><td class="text-right">0</td></tr>
                                 <tr><td>KBU 6</td><td>Rp</td><td class="text-right">0</td></tr>
-                                <tr class="bold"><td>TOTAL II</td><td>Rp</td><td class="text-right">0</td></tr>
-                            </table>
-
-                            <table class="report-table" style="margin-top: 6px; border-top: 1px solid #000;">
-                                <tr class="bold">
-                                    <td style="width: 50%;">TOTAL PENDAPATAN</td>
-                                    <td style="width: 10%;">Rp</td>
-                                    <td class="text-right">{fmt_num(pendapatan_tot)}</td>
+                                <tr class="bold" style="border-top: 1px solid #ccc;">
+                                    <td>TOTAL II</td><td>Rp</td><td class="text-right">0</td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
                 </table>
 
-                <!-- SEBALAH KIRI BAWAH PENDAPATAN: PENGELUARAN -->
-                <div style="margin-top: 10px;">
-                    <table class="report-table">
-                        <tr>
-                            <td style="width: 60%; vertical-align: top; padding-right: 15px;">
-                                <div class="bold" style="margin-bottom: 4px;">PENGELUARAN:</div>
-                                <table class="report-table">
-                                    {rows_ops_h2}
-                                    <tr class="bold"><td colspan="3" style="padding-top:4px;">LAIN-LAIN:</td></tr>
-                                    {rows_lain_h2}
-                                </table>
-                            </td>
-                            <td style="width: 40%;"></td>
-                        </tr>
-                    </table>
-                </div>
-
-                <!-- TOTAL PENGELUARAN & LABA BERSIH -->
-                <table class="report-table" style="margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px;">
+                <!-- TOTAL PENDAPATAN -->
+                <table class="report-table" style="border-top: 1px solid #000; border-bottom: 1px solid #000; margin-bottom: 12px; padding: 3px 0;">
                     <tr class="bold">
-                        <td style="width: 28%;">TOTAL PENGELUARAN</td>
-                        <td style="width: 3%;">:</td>
+                        <td style="width: 70%;">TOTAL PENDAPATAN (PENDAPATAN I + PENDAPATAN II)</td>
                         <td style="width: 5%;">Rp</td>
-                        <td class="text-right" style="width: 24%;">{fmt_num(biaya_tot)}</td>
-                        <td style="width: 40%;"></td>
-                    </tr>
-                    <tr class="bold">
-                        <td>LABA BERSIH</td>
-                        <td>:</td>
-                        <td>Rp</td>
-                        <td class="text-right">{fmt_num(laba_bersih)}</td>
-                        <td></td>
+                        <td class="text-right" style="width: 25%;">{fmt_num(pendapatan_tot)}</td>
                     </tr>
                 </table>
 
-                <!-- PEMBAGIAN HASIL (JARAK DISESUAIKAN BERDEKATAN) -->
-                <div class="bold" style="margin-top: 10px; margin-bottom: 3px;">PEMBAGIAN BAGI HASIL:</div>
-                <table class="report-table" style="line-height: 1.2;">
+                <!-- DIBAWAHNYA PENGELUARAN -->
+                <div class="bold" style="margin-bottom: 4px;">PENGELUARAN:</div>
+                <table class="report-table" style="width: 70%;">
+                    {rows_ops_h2}
+                    <tr class="bold"><td colspan="3" style="padding-top:4px;">LAIN-LAIN:</td></tr>
+                    {rows_lain_h2}
+                </table>
+
+                <!-- TOTAL PENGELUARAN & LABA BERSIH -->
+                <table class="report-table" style="margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px; width: 70%;">
+                    <tr class="bold">
+                        <td style="width: 50%;">TOTAL PENGELUARAN</td>
+                        <td style="width: 5%;">Rp</td>
+                        <td class="text-right" style="width: 45%;">{fmt_num(biaya_tot)}</td>
+                    </tr>
+                    <tr class="bold">
+                        <td>LABA BERSIH</td>
+                        <td>Rp</td>
+                        <td class="text-right">{fmt_num(laba_bersih)}</td>
+                    </tr>
+                </table>
+
+                <!-- PEMBAGIAN HASIL (JARAK RAPAT & DITATA RAPI) -->
+                <div class="bold" style="margin-top: 15px; margin-bottom: 4px;">PEMBAGIAN BAGI HASIL:</div>
+                <table class="report-table" style="width: 85%; line-height: 1.2;">
                     <tr>
-                        <td style="width: 20%;">PROFIT SHARING</td>
-                        <td style="width: 8%;">20%</td>
-                        <td style="width: 3%;">X</td>
-                        <td style="width: 18%;">{fmt_num(laba_bersih)}</td>
-                        <td class="text-right">{fmt_num(primkopasindo)} (PRIMKOPASINDO)</td>
+                        <td style="width: 18%;">PROFIT SHARING</td>
+                        <td style="width: 6%;">20%</td>
+                        <td style="width: 2%;">X</td>
+                        <td style="width: 18%;">Rp {fmt_num(laba_bersih)}</td>
+                        <td style="width: 3%; text-align:center;">=</td>
+                        <td style="width: 18%;">Rp {fmt_num(primkopasindo)}</td>
+                        <td>(PRIMKOPASINDO)</td>
                     </tr>
                     <tr>
                         <td>PROFIT SHARING</td>
                         <td>10%</td>
                         <td>X</td>
-                        <td>{fmt_num(laba_bersih)}</td>
-                        <td class="text-right">{fmt_num(porsi_kalapas)} (PENGAWAS UPT)</td>
+                        <td>Rp {fmt_num(laba_bersih)}</td>
+                        <td style="text-align:center;">=</td>
+                        <td>Rp {fmt_num(porsi_kalapas)}</td>
+                        <td>(PENGAWAS UPT)</td>
                     </tr>
                     <tr>
                         <td>PROFIT SHARING</td>
                         <td>10%</td>
                         <td>X</td>
-                        <td>{fmt_num(laba_bersih)}</td>
-                        <td class="text-right">{fmt_num(porsi_inkopasindo)} (INKOPASINDO)</td>
+                        <td>Rp {fmt_num(laba_bersih)}</td>
+                        <td style="text-align:center;">=</td>
+                        <td>Rp {fmt_num(porsi_inkopasindo)}</td>
+                        <td>(INKOPASINDO)</td>
                     </tr>
                     <tr>
                         <td>PROFIT SHARING</td>
                         <td>60%</td>
                         <td>X</td>
-                        <td>{fmt_num(laba_bersih)}</td>
-                        <td class="text-right">{fmt_num(muffaindo2)} (CV. MUFFAINDO)</td>
+                        <td>Rp {fmt_num(laba_bersih)}</td>
+                        <td style="text-align:center;">=</td>
+                        <td>Rp {fmt_num(muffaindo2)}</td>
+                        <td>(CV. MUFFAINDO)</td>
                     </tr>
-                    <tr class="bold">
-                        <td colspan="3"></td>
-                        <td>TOTAL</td>
-                        <td class="text-right">{fmt_num(laba_bersih)}</td>
+                    <tr class="bold" style="border-top: 1px solid #ccc;">
+                        <td colspan="3">TOTAL BAGI HASIL</td>
+                        <td>Rp {fmt_num(laba_bersih)}</td>
+                        <td style="text-align:center;">=</td>
+                        <td>Rp {fmt_num(laba_bersih)}</td>
+                        <td></td>
                     </tr>
                 </table>
 

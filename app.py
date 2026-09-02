@@ -4,6 +4,7 @@ import sqlite3
 import plotly.express as px
 from datetime import datetime
 import calendar
+import streamlit.components.v1 as components
 
 # -----------------------------------------------------------------------------
 # 1. KONFIGURASI HALAMAN
@@ -15,7 +16,100 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# 2. CSS STYLING (ADMINLTE DASHBOARD + A4 PRINT TAJAM)
+# 2. DATABASE MANAGEMENT
+# -----------------------------------------------------------------------------
+def init_db():
+    conn = sqlite3.connect("wartelsus_pos.db")
+    c = conn.cursor()
+    
+    # Tabel Transaksi
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS transaksi (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tanggal TEXT,
+            jenis TEXT,
+            kategori TEXT,
+            keterangan TEXT,
+            nominal REAL
+        )
+    """)
+    
+    # Tabel Users
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            nama_lengkap TEXT,
+            role TEXT
+        )
+    """)
+    
+    # User Default Admin & User Regular jika kosong
+    c.execute("SELECT COUNT(*) FROM users")
+    if c.fetchone()[0] == 0:
+        default_users = [
+            ("admin", "admin123", "Ahmad Jhony", "Admin"),
+            ("user1", "user123", "Staf Keuangan", "User")
+        ]
+        c.executemany("INSERT INTO users (username, password, nama_lengkap, role) VALUES (?, ?, ?, ?)", default_users)
+    
+    # Data Default Transaksi jika Kosong
+    c.execute("SELECT COUNT(*) FROM transaksi")
+    if c.fetchone()[0] == 0:
+        default_tx = [
+            ("2026-08-31", "PENDAPATAN", "PENDAPATAN", "PENDAPATAN WARTEL AGUSTUS", 59000000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PULSA PASCA BAYAR", 2960000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "INTERNET", 1005000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "ATK", 0.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PPH 23 (2%)", 1180000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP", 300000.0),
+            ("2026-08-31", "BIAYA", "OPERASIONAL", "SERVER", 2243110.0),
+            ("2026-08-31", "BIAYA", "LAIN-LAIN", "ANGSURAN PC WARTEL 8", 1000000.0),
+            ("2026-08-31", "BIAYA", "LAIN-LAIN", "INSENTIF JAGA KANTIN AGUSTUS 2026", 450000.0),
+            ("2026-08-31", "BIAYA", "LAIN-LAIN", "LAIN-LAIN (CHARGER + KABEL TYPE C)", 300000.0)
+        ]
+        c.executemany("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)", default_tx)
+        
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# -----------------------------------------------------------------------------
+# 3. SESI AUTENTIKASI & LOGIN
+# -----------------------------------------------------------------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.session_state.nama_lengkap = ""
+    st.session_state.role = ""
+
+if not st.session_state.logged_in:
+    st.markdown("<h2 style='text-align: center; margin-top: 50px;'>Login KeuanganApp</h2>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        username_input = st.text_input("Username")
+        password_input = st.text_input("Password", type="password")
+        if st.button("LOG IN", type="primary", use_container_width=True):
+            conn = sqlite3.connect("wartelsus_pos.db")
+            c = conn.cursor()
+            c.execute("SELECT username, nama_lengkap, role FROM users WHERE username=? AND password=?", (username_input, password_input))
+            user = c.fetchone()
+            conn.close()
+            
+            if user:
+                st.session_state.logged_in = True
+                st.session_state.username = user[0]
+                st.session_state.nama_lengkap = user[1]
+                st.session_state.role = user[2]
+                st.rerun()
+            else:
+                st.error("Username atau password salah!")
+    st.stop()
+
+# -----------------------------------------------------------------------------
+# 4. CSS STYLING
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -26,7 +120,6 @@ st.markdown("""
             background-color: #f4f6f9 !important;
         }
 
-        /* Sembunyikan elemen bawaan Streamlit */
         header, [data-testid="stHeader"], [data-testid="stToolbar"],
         .stAppHeader, #MainMenu, footer {
             display: none !important;
@@ -41,7 +134,6 @@ st.markdown("""
             padding-right: 1rem !important;
         }
 
-        /* Top Navbar AdminLTE */
         .admin-navbar {
             background-color: #3c8dbc;
             color: #ffffff;
@@ -55,7 +147,6 @@ st.markdown("""
         .admin-navbar-brand { font-size: 20px; font-weight: 700; }
         .admin-navbar-user { font-size: 13px; font-weight: 600; }
 
-        /* Sidebar Styling AdminLTE */
         section[data-testid="stSidebar"] { background-color: #222d32 !important; width: 250px !important; }
         section[data-testid="stSidebar"] * { color: #b8c7ce !important; }
         .user-panel { padding: 15px 10px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1a2226; }
@@ -63,7 +154,6 @@ st.markdown("""
         .user-info { font-size: 13px; font-weight: 600; color: #fff !important; }
         .user-status { font-size: 11px; color: #00a65a !important; }
 
-        /* AdminLTE Info Box / Small Box Cards */
         .small-box {
             border-radius: 3px; position: relative; display: block; margin-bottom: 15px;
             box-shadow: 0 1px 1px rgba(0,0,0,0.1); color: #ffffff !important; padding: 12px 15px;
@@ -83,81 +173,18 @@ st.markdown("""
             border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;
         }
 
-        /* Container Card */
         .box-container {
             background: #ffffff; border-top: 3px solid #3c8dbc; border-radius: 3px;
             padding: 15px; margin-bottom: 20px; box-shadow: 0 1px 1px rgba(0,0,0,0.1);
         }
         .box-header { font-size: 16px; font-weight: 600; color: #444; border-bottom: 1px solid #f4f4f4; padding-bottom: 8px; margin-bottom: 12px; }
 
-        /* Hilangkan Tombol Stepper +/- pada Number Input */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
             margin: 0; 
         }
         input[type=number] { -moz-appearance: textfield; }
-
-        /* FORMAT CETAK A4 100% PRESISI & TAJAM */
-        @media print {
-            @page {
-                size: A4 portrait;
-                margin: 10mm 12mm 10mm 12mm;
-            }
-
-            section[data-testid="stSidebar"], 
-            header, footer, .admin-navbar,
-            .stButton, .no-print, [data-testid="stTabs"],
-            div[data-testid="stVerticalBlock"] > div:has(.no-print) {
-                display: none !important;
-                visibility: hidden !important;
-                height: 0 !important;
-            }
-
-            body, html, .main, .block-container, [data-testid="stAppViewContainer"] {
-                background: #ffffff !important;
-                color: #000000 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            .pdf-page {
-                border: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                box-shadow: none !important;
-                width: 100% !important;
-                background: #ffffff !important;
-            }
-        }
-
-        /* Document Container A4 */
-        .pdf-page {
-            background: #ffffff; color: #000000; padding: 20px 30px;
-            font-family: Arial, Helvetica, sans-serif; font-size: 9pt; line-height: 1.35;
-            border: 1px solid #d2d6de; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin: 0 auto 20px auto; max-width: 210mm;
-        }
-        .pdf-header-code { font-size: 10pt; font-weight: bold; margin-bottom: 8px; }
-        .pdf-title { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 12px; line-height: 1.35; }
-
-        .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000000; table-layout: fixed; }
-        .report-table td { padding: 2px 3px; vertical-align: top; }
-        .report-table .num-col { width: 4%; text-align: left; }
-        .report-table .label-col { width: 56%; }
-        .report-table .sep-col { width: 3%; text-align: center; }
-        .report-table .currency-col { width: 7%; text-align: left; }
-        .report-table .val-col { width: 30%; text-align: right; }
-
-        .text-right { text-align: right !important; }
-        .bold { font-weight: bold !important; }
-        .indent-1 { padding-left: 18px !important; }
-
-        .ttd-wrapper { margin-top: 25px; width: 100%; display: flex; justify-content: flex-end; }
-        .ttd-box { width: 280px; text-align: center; font-size: 9pt; color: #000000; float: right; }
-        .page-footer { margin-top: 15px; text-align: right; font-size: 8.5pt; color: #000000; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -175,74 +202,50 @@ def fmt_num(val):
         return "0"
 
 # -----------------------------------------------------------------------------
-# 3. DATABASE MANAGEMENT
-# -----------------------------------------------------------------------------
-def init_db():
-    conn = sqlite3.connect("wartelsus_pos.db")
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS transaksi (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tanggal TEXT,
-            jenis TEXT,
-            kategori TEXT,
-            keterangan TEXT,
-            nominal REAL
-        )
-    """)
-    conn.commit()
-
-    # Data Default jika Database Masih Kosong
-    c.execute("SELECT COUNT(*) FROM transaksi")
-    if c.fetchone()[0] == 0:
-        default_tx = [
-            ("2026-08-31", "PENDAPATAN", "PENDAPATAN", "PENDAPATAN WARTEL AGUSTUS", 59000000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PULSA PASCA BAYAR", 2960000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "INTERNET", 1005000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "ATK", 0.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PPH 23 (2%)", 1180000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "PNBP", 300000.0),
-            ("2026-08-31", "BIAYA", "OPERASIONAL", "SERVER", 2243110.0),
-            ("2026-08-31", "BIAYA", "LAIN-LAIN", "ANGSURAN PC WARTEL 8", 1000000.0),
-            ("2026-08-31", "BIAYA", "LAIN-LAIN", "INSENTIF JAGA KANTIN AGUSTUS 2026", 450000.0),
-            ("2026-08-31", "BIAYA", "LAIN-LAIN", "LAIN-LAIN (CHARGER + KABEL TYPE C)", 300000.0)
-        ]
-        c.executemany("INSERT INTO transaksi (tanggal, jenis, kategori, keterangan, nominal) VALUES (?, ?, ?, ?, ?)", default_tx)
-        conn.commit()
-    conn.close()
-
-init_db()
-
-# -----------------------------------------------------------------------------
-# 4. SIDEBAR & NAVBAR UTAMA
+# 5. SIDEBAR & MENU SESUAI ROLE
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("""
+    st.markdown(f"""
         <div class="user-panel">
             <div class="user-avatar">👤</div>
             <div>
-                <div class="user-info">Ahmad Jhony</div>
-                <div class="user-status">● Online</div>
+                <div class="user-info">{st.session_state.nama_lengkap}</div>
+                <div class="user-status">● {st.session_state.role}</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown('<div style="padding: 8px 12px; font-size: 11px; font-weight: bold; color: #4b646f;">MAIN NAVIGATION</div>', unsafe_allow_html=True)
-    menu = st.radio("", ["DASHBOARD", "TRANSAKSI POS", "LAPORAN KEUANGAN"], index=0, label_visibility="collapsed")
+    
+    # Pengaturan Akses Menu Berdasarkan Role
+    if st.session_state.role == "Admin":
+        menu_options = ["DASHBOARD", "TRANSAKSI POS", "DATA PENGGUNA", "LAPORAN KEUANGAN"]
+    else:
+        # Pendaftaran user & transaksi tersembunyi untuk Non-Admin
+        menu_options = ["DASHBOARD", "LAPORAN KEUANGAN"]
 
-st.markdown("""
-    <div class="admin-navbar no-print">
+    menu = st.radio("", menu_options, index=0, label_visibility="collapsed")
+    
+    st.write("---")
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.session_state.role = ""
+        st.rerun()
+
+st.markdown(f"""
+    <div class="admin-navbar">
         <div class="admin-navbar-brand">KeuanganApp</div>
-        <div class="admin-navbar-user">Ahmad Jhony - administrator | 🔒 LOGOUT</div>
+        <div class="admin-navbar-user">{st.session_state.nama_lengkap} - {st.session_state.role.lower()}</div>
     </div>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1. MENU: DASHBOARD (PERSISI DENGAN CONTOH 1 - ADMINLTE)
+# 1. MENU: DASHBOARD
 # -----------------------------------------------------------------------------
 if menu == "DASHBOARD":
     st.markdown("""
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;" class="no-print">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <span style="font-size:20px; font-weight:600; color:#333;">Dashboard <small style="font-size:12px; color:#777;">Control panel</small></span>
             <span style="font-size:12px; color:#777;">🏠 Home > Dashboard</span>
         </div>
@@ -256,7 +259,6 @@ if menu == "DASHBOARD":
     month_str = datetime.now().strftime("%Y-%m")
     year_str = datetime.now().strftime("%Y")
 
-    # Perhitungan Metrik AdminLTE
     df_in = df_all[df_all['jenis'] == 'PENDAPATAN']
     df_out = df_all[df_all['jenis'] == 'BIAYA']
 
@@ -270,77 +272,33 @@ if menu == "DASHBOARD":
     out_year = df_out[df_out['tanggal'].str.startswith(year_str)]['nominal'].sum()
     out_total = df_out['nominal'].sum()
 
-    # Baris 1: Pemasukan Cards (Sesuai Warna & Tata Letak Contoh 1)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(f'''
-            <div class="small-box small-box-green">
-                <div class="inner"><h3>{fmt_rupiah(in_today)}</h3><p>Pemasukan Hari Ini</p></div>
-                <div class="icon-bg">📊</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-green"><div class="inner"><h3>{fmt_rupiah(in_today)}</h3><p>Pemasukan Hari Ini</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
     with c2:
-        st.markdown(f'''
-            <div class="small-box small-box-blue">
-                <div class="inner"><h3>{fmt_rupiah(in_month)}</h3><p>Pemasukan Bulan Ini</p></div>
-                <div class="icon-bg">📊</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-blue"><div class="inner"><h3>{fmt_rupiah(in_month)}</h3><p>Pemasukan Bulan Ini</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
     with c3:
-        st.markdown(f'''
-            <div class="small-box small-box-orange">
-                <div class="inner"><h3>{fmt_rupiah(in_year)}</h3><p>Pemasukan Tahun Ini</p></div>
-                <div class="icon-bg">📊</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-orange"><div class="inner"><h3>{fmt_rupiah(in_year)}</h3><p>Pemasukan Tahun Ini</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
     with c4:
-        st.markdown(f'''
-            <div class="small-box small-box-black">
-                <div class="inner"><h3>{fmt_rupiah(in_total)}</h3><p>Seluruh Pemasukan</p></div>
-                <div class="icon-bg">📊</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(in_total)}</h3><p>Seluruh Pemasukan</p></div><div class="icon-bg">📊</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
 
-    # Baris 2: Pengeluaran Cards (Merah & Gelap)
     c5, c6, c7, c8 = st.columns(4)
     with c5:
-        st.markdown(f'''
-            <div class="small-box small-box-red">
-                <div class="inner"><h3>{fmt_rupiah(out_today)}</h3><p>Pengeluaran Hari Ini</p></div>
-                <div class="icon-bg">📉</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_today)}</h3><p>Pengeluaran Hari Ini</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
     with c6:
-        st.markdown(f'''
-            <div class="small-box small-box-red">
-                <div class="inner"><h3>{fmt_rupiah(out_month)}</h3><p>Pengeluaran Bulan Ini</p></div>
-                <div class="icon-bg">📉</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_month)}</h3><p>Pengeluaran Bulan Ini</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
     with c7:
-        st.markdown(f'''
-            <div class="small-box small-box-red">
-                <div class="inner"><h3>{fmt_rupiah(out_year)}</h3><p>Pengeluaran Tahun Ini</p></div>
-                <div class="icon-bg">📉</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-red"><div class="inner"><h3>{fmt_rupiah(out_year)}</h3><p>Pengeluaran Tahun Ini</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
     with c8:
-        st.markdown(f'''
-            <div class="small-box small-box-black">
-                <div class="inner"><h3>{fmt_rupiah(out_total)}</h3><p>Seluruh Pengeluaran</p></div>
-                <div class="icon-bg">📉</div>
-                <div class="small-box-footer">More info ➔</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f'<div class="small-box small-box-black"><div class="inner"><h3>{fmt_rupiah(out_total)}</h3><p>Seluruh Pengeluaran</p></div><div class="icon-bg">📉</div><div class="small-box-footer">More info ➔</div></div>', unsafe_allow_html=True)
 
-    # Section Grafik & Kalender Samping (Sesuai Gambar 1)
     col_chart, col_cal = st.columns([7, 3])
     with col_chart:
         st.markdown('<div class="box-container"><div class="box-header">Grafik Data Pemasukan & Pengeluaran Per Bulan</div>', unsafe_allow_html=True)
         if not df_all.empty:
             df_chart = df_all.groupby(['jenis'])['nominal'].sum().reset_index()
             fig = px.bar(df_chart, x='jenis', y='nominal', color='jenis',
-                         color_discrete_map={'PENDAPATAN': '#00a65a', 'BIAYA': '#dd4b39'},
-                         text_auto=True)
+                         color_discrete_map={'PENDAPATAN': '#00a65a', 'BIAYA': '#dd4b39'}, text_auto=True)
             fig.update_layout(height=280, margin=dict(l=10, r=10, t=10, b=10))
             st.plotly_chart(fig, use_container_width=True)
         else:
@@ -355,15 +313,13 @@ if menu == "DASHBOARD":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. MENU: TRANSAKSI POS (LOGIKA PERBAIKAN 5)
+# 2. MENU: TRANSAKSI POS (KHUSUS ADMIN)
 # -----------------------------------------------------------------------------
-elif menu == "TRANSAKSI POS":
+elif menu == "TRANSAKSI POS" and st.session_state.role == "Admin":
     st.markdown('<div class="box-container"><div class="box-header">Input Transaksi Keuangan</div>', unsafe_allow_html=True)
 
-    # 1. Pilih Jenis Transaksi
     jenis_selected = st.selectbox("Jenis Transaksi", ["PENDAPATAN", "BIAYA"])
 
-    # 2. Dinamis Kategori berdasarkan Jenis Transaksi
     if jenis_selected == "PENDAPATAN":
         kategori_options = ["PENDAPATAN"]
     else:
@@ -371,18 +327,10 @@ elif menu == "TRANSAKSI POS":
 
     kategori_selected = st.selectbox("Kategori Transaksi", kategori_options)
 
-    # 3. Dropdown Keterangan + Opsi Tambah Baru
     preset_keterangan = [
-        "PENDAPATAN WARTEL",
-        "PULSA PASCA BAYAR",
-        "INTERNET",
-        "PNBP",
-        "SERVER",
-        "ATK",
-        "PPH 23 (2%)",
-        "ANGSURAN PC WARTEL",
-        "INSENTIF JAGA KANTIN",
-        "LAIN-LAIN (CHARGER + KABEL TYPE C)",
+        "PENDAPATAN WARTEL", "PULSA PASCA BAYAR", "INTERNET", "PNBP",
+        "SERVER", "ATK", "PPH 23 (2%)", "ANGSURAN PC WARTEL",
+        "INSENTIF JAGA KANTIN", "LAIN-LAIN (CHARGER + KABEL TYPE C)",
         "+ Tambah Keterangan Baru..."
     ]
 
@@ -397,7 +345,6 @@ elif menu == "TRANSAKSI POS":
     with col_tgl:
         tgl_transaksi = st.date_input("Tanggal Transaksi", datetime.now())
     with col_nom:
-        # Menggunakan format bersih tanpa tombol +/- (stepper disembunyikan CSS)
         nominal_val = st.number_input("Nominal (Rp)", min_value=0.0, step=500.0, format="%.0f")
 
     if st.button("💾 Simpan Transaksi POS", type="primary"):
@@ -415,20 +362,57 @@ elif menu == "TRANSAKSI POS":
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Tabel Riwayat Transaksi
     st.markdown('<div class="box-container"><div class="box-header">Riwayat Transaksi Terdaftar</div>', unsafe_allow_html=True)
     conn = sqlite3.connect("wartelsus_pos.db")
     df_riwayat = pd.read_sql_query("SELECT id, tanggal, jenis, kategori, keterangan, nominal FROM transaksi ORDER BY id DESC", conn)
     conn.close()
-
     st.dataframe(df_riwayat, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. MENU: LAPORAN KEUANGAN (FILTER BULAN BERJALAN & A4 PRESISI TAJAM)
+# 3. MENU: DATA PENGGUNA (PENDAFTARAN USER BARU - KHUSUS ADMIN)
+# -----------------------------------------------------------------------------
+elif menu == "DATA PENGGUNA" and st.session_state.role == "Admin":
+    st.markdown('<div class="box-container"><div class="box-header">Pendaftaran User Baru</div>', unsafe_allow_html=True)
+    
+    col_u1, col_u2 = st.columns(2)
+    with col_u1:
+        new_username = st.text_input("Username Baru")
+        new_password = st.text_input("Password", type="password")
+    with col_u2:
+        new_fullname = st.text_input("Nama Lengkap")
+        new_role = st.selectbox("Role / Level Hak Akses", ["User", "Admin"])
+
+    if st.button("➕ Daftarkan Pengguna", type="primary"):
+        if new_username.strip() != "" and new_password.strip() != "":
+            try:
+                conn = sqlite3.connect("wartelsus_pos.db")
+                c = conn.cursor()
+                c.execute("INSERT INTO users (username, password, nama_lengkap, role) VALUES (?, ?, ?, ?)",
+                          (new_username, new_password, new_fullname, new_role))
+                conn.commit()
+                conn.close()
+                st.success(f"✅ User '{new_username}' berhasil didaftarkan sebagai {new_role}!")
+                st.rerun()
+            except sqlite3.IntegrityError:
+                st.error("⚠️ Username sudah terdaftar, gunakan username lain.")
+        else:
+            st.warning("⚠️ Lengkapi username dan password.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="box-container"><div class="box-header">Daftar Pengguna Sistem</div>', unsafe_allow_html=True)
+    conn = sqlite3.connect("wartelsus_pos.db")
+    df_users = pd.read_sql_query("SELECT id, username, nama_lengkap, role FROM users", conn)
+    conn.close()
+    st.dataframe(df_users, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 4. MENU: LAPORAN KEUANGAN (RENDER HTML TAJAM & PRINT A4 FIXED)
 # -----------------------------------------------------------------------------
 elif menu == "LAPORAN KEUANGAN":
-    st.markdown('<div class="no-print"><div class="box-container"><div class="box-header">Filter Periode Laporan Keuangan</div>', unsafe_allow_html=True)
+    st.markdown('<div class="box-container"><div class="box-header">Filter Periode Laporan Keuangan</div>', unsafe_allow_html=True)
     
     c_f1, c_f2, c_f3 = st.columns([3, 3, 4])
     bulan_dict = {
@@ -445,15 +429,15 @@ elif menu == "LAPORAN KEUANGAN":
     with c_f3:
         sel_tgl_cetak = st.date_input("TANGGAL DOKUMEN CETAK", datetime(2026, 9, 2))
         
-    st.markdown('</div></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Filter Database Berdasarkan Bulan Berjalan yang Dipilih
+    # Filter Database Berdasarkan Bulan Berjalan
     periode_query = f"{sel_tahun}-{sel_bulan_kode}"
     conn = sqlite3.connect("wartelsus_pos.db")
     df_filtered = pd.read_sql_query("SELECT * FROM transaksi WHERE strftime('%Y-%m', tanggal) = ?", conn, params=(periode_query,))
     conn.close()
 
-    # Kalkulasi Laporan Keuangan Bulan Berjalan
+    # Perhitungan Laporan
     pendapatan_tot = df_filtered[df_filtered['jenis'] == 'PENDAPATAN']['nominal'].sum()
     df_biaya_all = df_filtered[df_filtered['jenis'] == 'BIAYA']
     biaya_tot = df_biaya_all['nominal'].sum()
@@ -472,15 +456,36 @@ elif menu == "LAPORAN KEUANGAN":
     primkopasindo = 0.20 * laba_bersih
     muffaindo2 = 0.60 * laba_bersih
 
-    st.markdown('<div class="no-print" style="margin-bottom:15px;">', unsafe_allow_html=True)
-    st.button("🖨️ PRINT DOKUMEN LAPORAN A4 (PRESISI 100%)", type="primary", use_container_width=True, 
-              on_click=lambda: st.components.v1.html("<script>window.parent.print();</script>", height=0))
-    st.markdown('</div>', unsafe_allow_html=True)
-
     tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laba Rugi", "📄 Halaman 2 - Jasa Video Call"])
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
-    # HALAMAN 1 (PRESISI DENGAN DATA BULAN BERJALAN)
+    # Template CSS Khusus Print A4 & Render HTML
+    doc_style = """
+    <style>
+        @page { size: A4 portrait; margin: 10mm 12mm 10mm 12mm; }
+        body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin:0; padding:0; background:#fff; }
+        .pdf-page { width: 100%; max-width: 210mm; background: #fff; padding: 10px; box-sizing: border-box; }
+        .pdf-header-code { font-size: 10pt; font-weight: bold; margin-bottom: 8px; }
+        .pdf-title { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 12px; line-height: 1.3; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 9pt; color: #000; table-layout: fixed; }
+        .report-table td { padding: 2px 3px; vertical-align: top; }
+        .num-col { width: 4%; text-align: left; }
+        .label-col { width: 56%; }
+        .sep-col { width: 3%; text-align: center; }
+        .currency-col { width: 7%; text-align: left; }
+        .val-col { width: 30%; text-align: right; }
+        .text-right { text-align: right !important; }
+        .bold { font-weight: bold !important; }
+        .indent-1 { padding-left: 18px !important; }
+        .ttd-wrapper { margin-top: 25px; width: 100%; display: flex; justify-content: flex-end; }
+        .ttd-box { width: 280px; text-align: center; font-size: 9pt; color: #000; float: right; }
+        .page-footer { margin-top: 15px; text-align: right; font-size: 8.5pt; color: #000; }
+        .btn-print { background-color: #00a65a; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        @media print { .btn-print { display: none !important; } }
+    </style>
+    """
+
+    # HALAMAN 1
     with tab_h1:
         df_ops_items = df_biaya_all[df_biaya_all['kategori'] != 'LAIN-LAIN'].to_dict('records')
         df_lain_items = df_biaya_all[df_biaya_all['kategori'] == 'LAIN-LAIN'].to_dict('records')
@@ -488,93 +493,88 @@ elif menu == "LAPORAN KEUANGAN":
         biaya_rows_h1 = ""
         idx_count = 1
         for b in df_ops_items:
-            biaya_rows_h1 += f"""
-            <tr>
-                <td class="num-col">{idx_count}</td>
-                <td class="label-col">{b['keterangan']}</td>
-                <td class="sep-col">:</td>
-                <td class="currency-col">Rp</td>
-                <td class="val-col">{fmt_num(b['nominal'])}</td>
-            </tr>"""
+            biaya_rows_h1 += f"<tr><td class='num-col'>{idx_count}</td><td class='label-col'>{b['keterangan']}</td><td class='sep-col'>:</td><td class='currency-col'>Rp</td><td class='val-col'>{fmt_num(b['nominal'])}</td></tr>"
             idx_count += 1
 
         for b in df_lain_items:
-            biaya_rows_h1 += f"""
-            <tr>
-                <td class="num-col">{idx_count}</td>
-                <td class="label-col">{b['keterangan']}</td>
-                <td class="sep-col">:</td>
-                <td class="currency-col">Rp</td>
-                <td class="val-col">{fmt_num(b['nominal'])}</td>
-            </tr>"""
+            biaya_rows_h1 += f"<tr><td class='num-col'>{idx_count}</td><td class='label-col'>{b['keterangan']}</td><td class='sep-col'>:</td><td class='currency-col'>Rp</td><td class='val-col'>{fmt_num(b['nominal'])}</td></tr>"
             idx_count += 1
 
         html_h1 = f"""
-        <div class="pdf-page">
-            <div class="pdf-header-code">1 WARTEL SUS</div>
-            <div class="pdf-title">
-                LAPORAN LABA RUGI WARTEL MUFFAINDO<br>
-                LAPAS NARKOTIKA KELAS IIA YOGYAKARTA<br>
-                PERIODE {sel_bulan_nama} {sel_tahun}
+        <!DOCTYPE html>
+        <html>
+        <head>{doc_style}</head>
+        <body>
+            <button class="btn-print" onclick="window.print()">🖨️ CETAK DOKUMEN HALAMAN 1</button>
+            <div class="pdf-page">
+                <div class="pdf-header-code">1 WARTEL SUS</div>
+                <div class="pdf-title">
+                    LAPORAN LABA RUGI WARTEL MUFFAINDO<br>
+                    LAPAS NARKOTIKA KELAS IIA YOGYAKARTA<br>
+                    PERIODE {sel_bulan_nama} {sel_tahun}
+                </div>
+
+                <table class="report-table">
+                    <tr class="bold">
+                        <td colspan="2" class="label-col">TOTAL PENDAPATAN</td>
+                        <td class="sep-col">:</td>
+                        <td class="currency-col">Rp</td>
+                        <td class="val-col">{fmt_num(pendapatan_tot)}</td>
+                    </tr>
+                    <tr><td colspan="5" style="height:6px;"></td></tr>
+                    <tr class="bold"><td colspan="5">BIAYA OPERASIONAL:</td></tr>
+                    {biaya_rows_h1}
+                    <tr class="bold">
+                        <td colspan="2">TOTAL BIAYA OPERASIONAL</td>
+                        <td class="sep-col">:</td>
+                        <td class="currency-col">Rp</td>
+                        <td class="val-col">{fmt_num(biaya_tot)}</td>
+                    </tr>
+                    <tr><td colspan="5" style="height:6px;"></td></tr>
+                    <tr class="bold">
+                        <td colspan="2">PENDAPATAN BERSIH</td>
+                        <td class="sep-col">:</td>
+                        <td class="currency-col">Rp</td>
+                        <td class="val-col">{fmt_num(laba_bersih)}</td>
+                    </tr>
+                    <tr><td colspan="5" style="height:8px;"></td></tr>
+                    <tr class="bold"><td colspan="5">PEMBAGIAN HASIL BAGI HASIL:</td></tr>
+                    <tr><td class="num-col">1</td><td class="label-col">40% X PENDAPATAN BERSIH (LAPAS)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_lapas)}</td></tr>
+                    <tr><td class="num-col">2</td><td class="label-col">10% X PENDAPATAN BERSIH (Ka.LAPAS)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_kalapas)}</td></tr>
+                    <tr><td class="num-col">3</td><td class="label-col">10% X IURAN 10% UNTUK INKOPASINDO</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_inkopasindo)}</td></tr>
+                    <tr><td class="num-col">4</td><td class="label-col">40% X PENDAPATAN BERSIH (MUFAINDO)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_muffaindo)}</td></tr>
+                    <tr class="bold"><td></td><td>TOTAL BAGI HASIL</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(laba_bersih)}</td></tr>
+                    <tr><td colspan="5" style="height:8px;"></td></tr>
+                    <tr class="bold"><td colspan="5">PENGELUARAN KANTOR:</td></tr>
+                    <tr><td class="num-col">1</td><td class="label-col">SHU KOPERASI</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(shu)}</td></tr>
+                    <tr><td class="num-col">2</td><td class="label-col">OPERASIONAL KANTOR</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(ops)}</td></tr>
+                    <tr><td class="num-col">3</td><td>UNTUK TU</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">4</td><td>UNTUK BINADIK</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">5</td><td>UNTUK KAMTIB</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">6</td><td>UNTUK GIATJA</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">7</td><td>UNTUK STAF KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">8</td><td colspan="4">UNTUK 4 (Empat) RUPAM</td></tr>
+                    <tr><td></td><td class="indent-1">RUPAM 1</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td></td><td class="indent-1">RUPAM 2</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td></td><td class="indent-1">RUPAM 3</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td></td><td class="indent-1">RUPAM 4</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
+                    <tr><td class="num-col">9</td><td colspan="4">UNTUK PENGURUS: 4 Pegawai</td></tr>
+                    <tr><td></td><td class="indent-1">AGUS YULIANTO</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
+                    <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
+                    <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
+                    <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
+                    <tr class="bold"><td colspan="2">TOTAL PENGELUARAN KANTOR</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_lapas)}</td></tr>
+                </table>
+
+                <div class="page-footer">Hal 1</div>
             </div>
+        </body>
+        </html>
+        """
+        # Render HTML menggunakan komponen native Streamlit
+        components.html(html_h1, height=950, scrolling=True)
 
-            <table class="report-table">
-                <tr class="bold">
-                    <td colspan="2" class="label-col">TOTAL PENDAPATAN</td>
-                    <td class="sep-col">:</td>
-                    <td class="currency-col">Rp</td>
-                    <td class="val-col">{fmt_num(pendapatan_tot)}</td>
-                </tr>
-                <tr><td colspan="5" style="height:6px;"></td></tr>
-                <tr class="bold"><td colspan="5">BIAYA OPERASIONAL:</td></tr>
-                {biaya_rows_h1 if biaya_rows_h1 != '' else '<tr><td>-</td><td colspan="4">Tidak ada data biaya</td></tr>'}
-                <tr class="bold">
-                    <td colspan="2">TOTAL BIAYA OPERASIONAL</td>
-                    <td class="sep-col">:</td>
-                    <td class="currency-col">Rp</td>
-                    <td class="val-col">{fmt_num(biaya_tot)}</td>
-                </tr>
-                <tr><td colspan="5" style="height:6px;"></td></tr>
-                <tr class="bold">
-                    <td colspan="2">PENDAPATAN BERSIH</td>
-                    <td class="sep-col">:</td>
-                    <td class="currency-col">Rp</td>
-                    <td class="val-col">{fmt_num(laba_bersih)}</td>
-                </tr>
-                <tr><td colspan="5" style="height:8px;"></td></tr>
-                <tr class="bold"><td colspan="5">PEMBAGIAN HASIL BAGI HASIL:</td></tr>
-                <tr><td class="num-col">1</td><td class="label-col">40% X PENDAPATAN BERSIH (LAPAS)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_lapas)}</td></tr>
-                <tr><td class="num-col">2</td><td class="label-col">10% X PENDAPATAN BERSIH (Ka.LAPAS)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_kalapas)}</td></tr>
-                <tr><td class="num-col">3</td><td class="label-col">10% X IURAN 10% UNTUK INKOPASINDO</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_inkopasindo)}</td></tr>
-                <tr><td class="num-col">4</td><td class="label-col">40% X PENDAPATAN BERSIH (MUFAINDO)</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_muffaindo)}</td></tr>
-                <tr class="bold"><td></td><td>TOTAL BAGI HASIL</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(laba_bersih)}</td></tr>
-                <tr><td colspan="5" style="height:8px;"></td></tr>
-                <tr class="bold"><td colspan="5">PENGELUARAN KANTOR:</td></tr>
-                <tr><td class="num-col">1</td><td class="label-col">SHU KOPERASI</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(shu)}</td></tr>
-                <tr><td class="num-col">2</td><td class="label-col">OPERASIONAL KANTOR</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(ops)}</td></tr>
-                <tr><td class="num-col">3</td><td>UNTUK TU</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td class="num-col">4</td><td>UNTUK BINADIK</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td class="num-col">5</td><td>UNTUK KAMTIB</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td class="num-col">6</td><td>UNTUK GIATJA</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td class="num-col">7</td><td>UNTUK STAF KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td class="num-col">8</td><td colspan="4">UNTUK 4 (Empat) RUPAM</td></tr>
-                <tr><td></td><td class="indent-1">RUPAM 1</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td></td><td class="indent-1">RUPAM 2</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td></td><td class="indent-1">RUPAM 3</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td></td><td class="indent-1">RUPAM 4</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_bagian)}</td></tr>
-                <tr><td class="num-col">9</td><td colspan="4">UNTUK PENGURUS: 4 Pegawai</td></tr>
-                <tr><td></td><td class="indent-1">AGUS YULIANTO</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
-                <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
-                <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
-                <tr><td></td><td class="indent-1">KPLP</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_pengurus)}</td></tr>
-                <tr class="bold"><td colspan="2">TOTAL PENGELUARAN KANTOR</td><td class="sep-col">:</td><td class="currency-col">Rp</td><td class="val-col">{fmt_num(porsi_lapas)}</td></tr>
-            </table>
-
-            <div class="page-footer">Hal 1</div>
-        </div>"""
-        st.markdown(html_h1, unsafe_allow_html=True)
-
-    # HALAMAN 2 (100% SESUAI CONTOH FOTO CETAK)
+    # HALAMAN 2
     with tab_h2:
         df_ops_h2 = df_biaya_all[df_biaya_all['kategori'] != 'LAIN-LAIN'].to_dict('records')
         df_lain_h2 = df_biaya_all[df_biaya_all['kategori'] == 'LAIN-LAIN'].to_dict('records')
@@ -588,133 +588,141 @@ elif menu == "LAPORAN KEUANGAN":
             rows_lain_h2 += f"<tr><td style='width: 60%;'>{b['keterangan']}</td><td style='width: 10%;'>Rp</td><td class='text-right'>{fmt_num(b['nominal'])}</td></tr>"
 
         html_h2 = f"""
-        <div class="pdf-page">
-            <table class="report-table" style="margin-bottom: 12px;">
-                <tr><td style="width: 22%;">NAMA WARTEL</td><td style="width:3%;">:</td><td>WARTEL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA</td></tr>
-                <tr><td>ALAMAT</td><td>:</td><td>JL KALIURANG KM 17 PAKEMBINANGUN PAKEM SLEMAN YOGYAKARTA</td></tr>
-                <tr><td>PERIODE PEMAKAIAN</td><td>:</td><td>{sel_bulan_nama} {sel_tahun}</td></tr>
-            </table>
+        <!DOCTYPE html>
+        <html>
+        <head>{doc_style}</head>
+        <body>
+            <button class="btn-print" onclick="window.print()">🖨️ CETAK DOKUMEN HALAMAN 2</button>
+            <div class="pdf-page">
+                <table class="report-table" style="margin-bottom: 12px;">
+                    <tr><td style="width: 22%;">NAMA WARTEL</td><td style="width:3%;">:</td><td>WARTEL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA</td></tr>
+                    <tr><td>ALAMAT</td><td>:</td><td>JL KALIURANG KM 17 PAKEMBINANGUN PAKEM SLEMAN YOGYAKARTA</td></tr>
+                    <tr><td>PERIODE PEMAKAIAN</td><td>:</td><td>{sel_bulan_nama} {sel_tahun}</td></tr>
+                </table>
 
-            <div class="pdf-title" style="margin-bottom: 15px;">
-                LAPORAN LABA RUGI WARTEL MUFFAINDO<br>
-                JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
-            </div>
-
-            <table class="report-table">
-                <tr>
-                    <td style="width: 50%; vertical-align: top; padding-right: 15px;">
-                        <div class="bold">PENDAPATAN 1:</div>
-                        <table class="report-table">
-                            <tr><td style="width: 40%;">KBU 1</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
-                            <tr><td>KBU 2</td><td>Rp</td><td class="text-right">0</td></tr>
-                            <tr><td>KBU 3</td><td>Rp</td><td class="text-right">0</td></tr>
-                            <tr class="bold"><td>TOTAL</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
-                        </table>
-                    </td>
-                    <td style="width: 50%; vertical-align: top; padding-left: 15px;">
-                        <div class="bold">PENDAPATAN II:</div>
-                        <table class="report-table">
-                            <tr><td style="width: 40%;">KBU 4</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
-                            <tr><td>KBU 5</td><td>Rp</td><td class="text-right">0</td></tr>
-                            <tr><td>KBU 6</td><td>Rp</td><td class="text-right">0</td></tr>
-                            <tr class="bold"><td>TOTAL</td><td>Rp</td><td class="text-right">0</td></tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-
-            <br>
-            <table class="report-table">
-                <tr class="bold">
-                    <td style="width: 50%; vertical-align: top; padding-right: 15px;">PENGELUARAN:</td>
-                    <td style="width: 50%; vertical-align: top; padding-left: 15px;">&nbsp;</td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: top; padding-right: 15px;">
-                        <table class="report-table">
-                            <tr><td style="width: 50%;">PENDAPATAN I</td><td style="width: 10%;">Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
-                            <tr><td>PENDAPATAN II</td><td>Rp</td><td class="text-right">0</td></tr>
-                            <tr class="bold"><td>TOTAL PENDAPATAN</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
-                        </table>
-                    </td>
-                    <td style="vertical-align: top; padding-left: 15px;">
-                        <table class="report-table">
-                            {rows_ops_h2}
-                            <tr class="bold"><td colspan="3" style="padding-top:4px;">LAIN-LAIN:</td></tr>
-                            {rows_lain_h2}
-                            <tr class="bold"><td style="padding-top:6px;">TOTAL PENGELUARAN</td><td style="padding-top:6px;">Rp</td><td class="text-right" style="padding-top:6px;">{fmt_num(biaya_tot)}</td></tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-
-            <br>
-            <table class="report-table">
-                <tr class="bold">
-                    <td style="width: 28%;">TOTAL PENGELUARAN</td>
-                    <td style="width: 3%;">:</td>
-                    <td style="width: 5%;">Rp</td>
-                    <td class="text-right" style="width: 20%;">{fmt_num(biaya_tot)}</td>
-                    <td style="width: 44%;"></td>
-                </tr>
-                <tr class="bold">
-                    <td>LABA BERSIH</td>
-                    <td>:</td>
-                    <td>Rp</td>
-                    <td class="text-right">{fmt_num(laba_bersih)}</td>
-                    <td></td>
-                </tr>
-            </table>
-
-            <br>
-            <div class="bold" style="margin-bottom: 5px;">PEMBAGIAN BAGI HASIL:</div>
-            <table class="report-table">
-                <tr>
-                    <td style="width: 20%;">PROFIT SHRING</td>
-                    <td style="width: 8%;">20%</td>
-                    <td style="width: 3%;">X</td>
-                    <td style="width: 18%;">{fmt_num(laba_bersih)}</td>
-                    <td class="text-right">{fmt_num(primkopasindo)} (PRIMKOPASINDO)</td>
-                </tr>
-                <tr>
-                    <td>PROFIT SHRING</td>
-                    <td>10%</td>
-                    <td>X</td>
-                    <td>{fmt_num(laba_bersih)}</td>
-                    <td class="text-right">{fmt_num(porsi_kalapas)} (PENGAWAS UPT)</td>
-                </tr>
-                <tr>
-                    <td>PROFIT SHRING</td>
-                    <td>10%</td>
-                    <td>X</td>
-                    <td>{fmt_num(laba_bersih)}</td>
-                    <td class="text-right">{fmt_num(porsi_inkopasindo)} (INKOPASINDO)</td>
-                </tr>
-                <tr>
-                    <td>PROFIT SHRING</td>
-                    <td>60%</td>
-                    <td>X</td>
-                    <td>{fmt_num(laba_bersih)}</td>
-                    <td class="text-right">{fmt_num(muffaindo2)} (CV. MUFFAINDO)</td>
-                </tr>
-                <tr class="bold">
-                    <td colspan="3"></td>
-                    <td>TOTAL</td>
-                    <td class="text-right">{fmt_num(laba_bersih)}</td>
-                </tr>
-            </table>
-
-            <div class="ttd-wrapper">
-                <div class="ttd-box">
-                    <div>{tgl_ttd_str}</div>
-                    <div>Penanggungjawab</div>
-                    <div class="bold" style="margin-top:2px;">KETUA KOPERASI</div>
-                    <br><br><br>
-                    <div class="bold" style="text-decoration: underline;">DANANG ANDRIYANTO</div>
+                <div class="pdf-title" style="margin-bottom: 15px;">
+                    LAPORAN LABA RUGI WARTEL MUFFAINDO<br>
+                    JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
                 </div>
-            </div>
 
-            <div style="clear:both;"></div>
-            <div class="page-footer">Hal. 2</div>
-        </div>"""
-        st.markdown(html_h2, unsafe_allow_html=True)
+                <table class="report-table">
+                    <tr>
+                        <td style="width: 50%; vertical-align: top; padding-right: 15px;">
+                            <div class="bold">PENDAPATAN 1:</div>
+                            <table class="report-table">
+                                <tr><td style="width: 40%;">KBU 1</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
+                                <tr><td>KBU 2</td><td>Rp</td><td class="text-right">0</td></tr>
+                                <tr><td>KBU 3</td><td>Rp</td><td class="text-right">0</td></tr>
+                                <tr class="bold"><td>TOTAL</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
+                            </table>
+                        </td>
+                        <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+                            <div class="bold">PENDAPATAN II:</div>
+                            <table class="report-table">
+                                <tr><td style="width: 40%;">KBU 4</td><td style="width: 10%;">Rp</td><td class="text-right">0</td></tr>
+                                <tr><td>KBU 5</td><td>Rp</td><td class="text-right">0</td></tr>
+                                <tr><td>KBU 6</td><td>Rp</td><td class="text-right">0</td></tr>
+                                <tr class="bold"><td>TOTAL</td><td>Rp</td><td class="text-right">0</td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <br>
+                <table class="report-table">
+                    <tr class="bold">
+                        <td style="width: 50%; vertical-align: top; padding-right: 15px;">PENGELUARAN:</td>
+                        <td style="width: 50%; vertical-align: top; padding-left: 15px;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: top; padding-right: 15px;">
+                            <table class="report-table">
+                                <tr><td style="width: 50%;">PENDAPATAN I</td><td style="width: 10%;">Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
+                                <tr><td>PENDAPATAN II</td><td>Rp</td><td class="text-right">0</td></tr>
+                                <tr class="bold"><td>TOTAL PENDAPATAN</td><td>Rp</td><td class="text-right">{fmt_num(pendapatan_tot)}</td></tr>
+                            </table>
+                        </td>
+                        <td style="vertical-align: top; padding-left: 15px;">
+                            <table class="report-table">
+                                {rows_ops_h2}
+                                <tr class="bold"><td colspan="3" style="padding-top:4px;">LAIN-LAIN:</td></tr>
+                                {rows_lain_h2}
+                                <tr class="bold"><td style="padding-top:6px;">TOTAL PENGELUARAN</td><td style="padding-top:6px;">Rp</td><td class="text-right" style="padding-top:6px;">{fmt_num(biaya_tot)}</td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <br>
+                <table class="report-table">
+                    <tr class="bold">
+                        <td style="width: 28%;">TOTAL PENGELUARAN</td>
+                        <td style="width: 3%;">:</td>
+                        <td style="width: 5%;">Rp</td>
+                        <td class="text-right" style="width: 20%;">{fmt_num(biaya_tot)}</td>
+                        <td style="width: 44%;"></td>
+                    </tr>
+                    <tr class="bold">
+                        <td>LABA BERSIH</td>
+                        <td>:</td>
+                        <td>Rp</td>
+                        <td class="text-right">{fmt_num(laba_bersih)}</td>
+                        <td></td>
+                    </tr>
+                </table>
+
+                <br>
+                <div class="bold" style="margin-bottom: 5px;">PEMBAGIAN BAGI HASIL:</div>
+                <table class="report-table">
+                    <tr>
+                        <td style="width: 20%;">PROFIT SHRING</td>
+                        <td style="width: 8%;">20%</td>
+                        <td style="width: 3%;">X</td>
+                        <td style="width: 18%;">{fmt_num(laba_bersih)}</td>
+                        <td class="text-right">{fmt_num(primkopasindo)} (PRIMKOPASINDO)</td>
+                    </tr>
+                    <tr>
+                        <td>PROFIT SHRING</td>
+                        <td>10%</td>
+                        <td>X</td>
+                        <td>{fmt_num(laba_bersih)}</td>
+                        <td class="text-right">{fmt_num(porsi_kalapas)} (PENGAWAS UPT)</td>
+                    </tr>
+                    <tr>
+                        <td>PROFIT SHRING</td>
+                        <td>10%</td>
+                        <td>X</td>
+                        <td>{fmt_num(laba_bersih)}</td>
+                        <td class="text-right">{fmt_num(porsi_inkopasindo)} (INKOPASINDO)</td>
+                    </tr>
+                    <tr>
+                        <td>PROFIT SHRING</td>
+                        <td>60%</td>
+                        <td>X</td>
+                        <td>{fmt_num(laba_bersih)}</td>
+                        <td class="text-right">{fmt_num(muffaindo2)} (CV. MUFFAINDO)</td>
+                    </tr>
+                    <tr class="bold">
+                        <td colspan="3"></td>
+                        <td>TOTAL</td>
+                        <td class="text-right">{fmt_num(laba_bersih)}</td>
+                    </tr>
+                </table>
+
+                <div class="ttd-wrapper">
+                    <div class="ttd-box">
+                        <div>{tgl_ttd_str}</div>
+                        <div>Penanggungjawab</div>
+                        <div class="bold" style="margin-top:2px;">KETUA KOPERASI</div>
+                        <br><br><br>
+                        <div class="bold" style="text-decoration: underline;">DANANG ANDRIYANTO</div>
+                    </div>
+                </div>
+
+                <div style="clear:both;"></div>
+                <div class="page-footer">Hal. 2</div>
+            </div>
+        </body>
+        </html>
+        """
+        components.html(html_h2, height=950, scrolling=True)

@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Inject CSS Kustom (Menirukan Referensi Dashboard UI)
+# 2. Inject CSS Kustom (Fix Filter Leak saat Cetak)
 st.markdown("""
     <style>
         /* Import Google Fonts - Poppins */
@@ -44,7 +44,7 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           2. TOP BLUE BAR & BREADCRUMB (Sama Seperti Referensi)
+           2. TOP BLUE BAR & BREADCRUMB
            ---------------------------------------------------- */
         .top-navbar {
             background-color: #1e88e5;
@@ -76,7 +76,7 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           3. SIDEBAR STYLING (Dark Theme like Admin LTE / Jagowebdev)
+           3. SIDEBAR STYLING
            ---------------------------------------------------- */
         section[data-testid="stSidebar"] {
             background-color: #2c323f !important;
@@ -105,7 +105,6 @@ st.markdown("""
             margin-top: 4px;
         }
 
-        /* Styling Radio Button Navigasi */
         section[data-testid="stSidebar"] .stRadio > div {
             gap: 6px !important;
             padding-top: 15px;
@@ -127,7 +126,6 @@ st.markdown("""
             background-color: rgba(255, 255, 255, 0.05) !important;
             color: #ffffff !important;
         }
-        /* Item Aktif */
         section[data-testid="stSidebar"] .stRadio div[aria-checked="true"] label {
             background-color: #1e88e5 !important;
             color: #ffffff !important;
@@ -136,7 +134,7 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           4. METRIC CARDS (SESUAI GAMBAR REFERENSI)
+           4. METRIC CARDS
            ---------------------------------------------------- */
         .card-stat {
             border-radius: 8px;
@@ -180,7 +178,7 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           5. CONTAINER UTAMA & TABEL
+           5. CONTAINER UTAMA
            ---------------------------------------------------- */
         .content-card {
             background-color: #ffffff;
@@ -200,13 +198,15 @@ st.markdown("""
         }
 
         /* ----------------------------------------------------
-           6. CETAK A4 STYLING
+           6. PERBAIKAN STYLING CETAK A4 (FILTER DIJAMIN HILANG)
            ---------------------------------------------------- */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 12mm;
+                margin: 10mm;
             }
+            
+            /* Sembunyikan seluruh komponen UI Web */
             section[data-testid="stSidebar"], 
             .stButton, 
             header, 
@@ -214,14 +214,23 @@ st.markdown("""
             .top-navbar,
             .breadcrumb-container,
             .stTabs [role="tablist"],
-            .no-print {
+            .no-print,
+            .filter-container,
+            [data-testid="stForm"],
+            [data-testid="stSelectbox"],
+            [data-testid="stNumberInput"],
+            [data-testid="stDateInput"] {
                 display: none !important;
+                visibility: hidden !important;
+                height: 0 !important;
             }
+
             .main .block-container { 
                 padding: 0 !important; 
                 margin: 0 !important; 
                 width: 100% !important;
             }
+
             .pdf-page { 
                 border: none !important; 
                 padding: 0 !important; 
@@ -234,7 +243,7 @@ st.markdown("""
         .pdf-page {
             background: #ffffff;
             color: #000000;
-            padding: 25px;
+            padding: 20px;
             font-family: Arial, sans-serif;
             font-size: 10pt;
             border: 1px solid #cbd5e1;
@@ -256,14 +265,14 @@ st.markdown("""
             font-size: 10pt;
         }
         .pdf-table td, .pdf-table th {
-            padding: 4px 6px;
+            padding: 3px 5px;
             vertical-align: top;
         }
         .text-right { text-align: right; }
         .bold { font-weight: bold; }
         
         .ttd-container {
-            margin-top: 30px;
+            margin-top: 25px;
             float: right;
             width: 280px;
             text-align: center;
@@ -329,7 +338,7 @@ def init_db():
 
 init_db()
 
-# Sidebar Layout (Dark Theme)
+# Sidebar Layout
 with st.sidebar:
     st.markdown("""
         <div class="sidebar-brand">
@@ -347,7 +356,7 @@ with st.sidebar:
         index=0
     )
 
-# Top Bar Header (Mirip Top Navy/Blue Navigation)
+# Top Bar Header
 st.markdown("""
     <div class="top-navbar">
         <div class="top-navbar-title">APLIKASI KEUANGAN WARTELSUS & POS</div>
@@ -375,7 +384,6 @@ if "Dashboard" in menu:
         laba_bersih = tot_pendapatan - tot_biaya
         tot_transaksi = len(df_tx)
 
-        # 4 Metric Cards Berwarna (Sesuai Desain Gambar Referensi)
         c1, c2, c3, c4 = st.columns(4)
         
         with c1:
@@ -420,7 +428,6 @@ if "Dashboard" in menu:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Content Cards Grafik
         col_g1, col_g2 = st.columns([6, 4])
         
         with col_g1:
@@ -563,35 +570,38 @@ elif "Transaksi" in menu:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# MENU 3: LAPORAN
+# MENU 3: LAPORAN (FIXED: FILTER TERSEMBUYI SAAT PRINT)
 # -----------------------------------------------------------------------------
 elif "Laporan" in menu:
     st.markdown("""
-        <div class="breadcrumb-container">
+        <div class="breadcrumb-container no-print">
             Home » <a href="#">Cetak Laporan Fisik A4</a>
         </div>
     """, unsafe_allow_html=True)
 
-    # Filter Periode Laporan
-    st.markdown('<div class="content-card no-print">', unsafe_allow_html=True)
-    st.markdown('<div class="content-card-title">Filter Periode Laporan Cetak</div>', unsafe_allow_html=True)
-    
-    col_l1, col_l2, col_l3 = st.columns([3, 3, 4])
-    
-    bulan_dict = {
-        "JANUARI": "01", "FEBRUARI": "02", "MARET": "03", "APRIL": "04",
-        "MEI": "05", "JUNI": "06", "JULI": "07", "AGUSTUS": "08",
-        "SEPTEMBER": "09", "OKTOBER": "10", "NOVEMBER": "11", "DESEMBER": "12"
-    }
+    # Diberi wrapper class 'filter-container no-print' agar pasti hilang 100% saat dicetak
+    st.markdown('<div class="filter-container no-print">', unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="content-card">', unsafe_allow_html=True)
+        st.markdown('<div class="content-card-title">Filter Periode Laporan Cetak</div>', unsafe_allow_html=True)
+        
+        col_l1, col_l2, col_l3 = st.columns([3, 3, 4])
+        
+        bulan_dict = {
+            "JANUARI": "01", "FEBRUARI": "02", "MARET": "03", "APRIL": "04",
+            "MEI": "05", "JUNI": "06", "JULI": "07", "AGUSTUS": "08",
+            "SEPTEMBER": "09", "OKTOBER": "10", "NOVEMBER": "11", "DESEMBER": "12"
+        }
 
-    with col_l1:
-        sel_bulan_nama = st.selectbox("BULAN LAPORAN", list(bulan_dict.keys()), index=7)
-        sel_bulan_kode = bulan_dict[sel_bulan_nama]
-    with col_l2:
-        sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
-    with col_l3:
-        sel_tgl_cetak = st.date_input("TANGGAL CETAK", datetime(2026, 9, 2))
-    
+        with col_l1:
+            sel_bulan_nama = st.selectbox("BULAN LAPORAN", list(bulan_dict.keys()), index=7)
+            sel_bulan_kode = bulan_dict[sel_bulan_nama]
+        with col_l2:
+            sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
+        with col_l3:
+            sel_tgl_cetak = st.date_input("TANGGAL CETAK", datetime(2026, 9, 2))
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Query Filter Database
@@ -904,7 +914,6 @@ JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
 
 <div style="clear:both;"></div>
 
-<!-- Tanda Tangan Resmi -->
 <div class="ttd-container">
 <div>{tgl_ttd_str}</div>
 <div>Penanggungjawab</div>

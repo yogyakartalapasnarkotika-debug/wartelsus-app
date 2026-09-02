@@ -11,12 +11,20 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CSS Custom: Sembunyikan Header Streamlit & Styling Komponen
+# 2. Inject CSS Kustom (Menirukan Referensi Dashboard UI)
 st.markdown("""
     <style>
-        /* ==========================================
-           1. HILANGKAN TOP HEADER STREAMLIT (100% CLEAN)
-           ========================================== */
+        /* Import Google Fonts - Poppins */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+        html, body, [class*="css"] {
+            font-family: 'Poppins', sans-serif !important;
+            background-color: #f4f6f9 !important;
+        }
+
+        /* ----------------------------------------------------
+           1. HILANGKAN TOP HEADER ASLI STREAMLIT
+           ---------------------------------------------------- */
         header, 
         [data-testid="stHeader"], 
         [data-testid="stToolbar"],
@@ -27,103 +35,184 @@ st.markdown("""
             visibility: hidden !important;
             height: 0px !important;
         }
-        
-        /* Mengangkat posisi konten agar tidak ada sisa ruang kosong di atas */
+
         .main .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 0rem !important;
             padding-bottom: 2rem !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
         }
 
-        /* ==========================================
-           2. JUDUL HALAMAN UTAMA (BESAR & PROFESIONAL)
-           ========================================== */
-        .page-header {
-            font-size: 34px !important;
-            font-weight: 900 !important;
-            color: #0f172a !important;
-            text-transform: uppercase !important;
-            letter-spacing: 1.5px !important;
-            margin-bottom: 20px !important;
-            border-bottom: 5px solid #0284c7 !important;
-            padding-bottom: 10px !important;
+        /* ----------------------------------------------------
+           2. TOP BLUE BAR & BREADCRUMB (Sama Seperti Referensi)
+           ---------------------------------------------------- */
+        .top-navbar {
+            background-color: #1e88e5;
+            color: #ffffff;
+            padding: 14px 25px;
+            margin-left: -1.5rem;
+            margin-right: -1.5rem;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .top-navbar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .breadcrumb-container {
+            font-size: 13px;
+            color: #6c757d;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .breadcrumb-container a {
+            color: #1e88e5;
+            text-decoration: none;
+        }
+
+        /* ----------------------------------------------------
+           3. SIDEBAR STYLING (Dark Theme like Admin LTE / Jagowebdev)
+           ---------------------------------------------------- */
+        section[data-testid="stSidebar"] {
+            background-color: #2c323f !important;
+            width: 260px !important;
+        }
+        section[data-testid="stSidebar"] * {
+            color: #c2c7d0 !important;
+        }
+        
+        .sidebar-brand {
+            padding: 18px 15px;
+            border-bottom: 1px solid #3f4756;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sidebar-brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff !important;
+            line-height: 1.2;
+        }
+        .sidebar-brand-sub {
+            font-size: 11px;
+            color: #9aa0ac !important;
+            margin-top: 4px;
+        }
+
+        /* Styling Radio Button Navigasi */
+        section[data-testid="stSidebar"] .stRadio > div {
+            gap: 6px !important;
+            padding-top: 15px;
+        }
+        section[data-testid="stSidebar"] .stRadio label {
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            padding: 10px 16px !important;
+            border-radius: 6px !important;
+            background-color: transparent !important;
+            border: none !important;
+            color: #c2c7d0 !important;
+            cursor: pointer !important;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
         }
-
-        .section-header {
-            font-size: 22px !important;
-            font-weight: 800 !important;
-            color: #1e293b !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.5px !important;
-            margin-top: 20px !important;
-            margin-bottom: 15px !important;
-        }
-
-        /* ==========================================
-           3. STYLING SIDEBAR & MENU NAVIGASI
-           ========================================== */
-        section[data-testid="stSidebar"] {
-            background-color: #0f172a !important;
-        }
-        section[data-testid="stSidebar"] * {
-            color: #ffffff !important;
-        }
-        section[data-testid="stSidebar"] .stRadio > div {
-            gap: 10px !important;
-        }
-        section[data-testid="stSidebar"] .stRadio label {
-            font-size: 16px !important;
-            font-weight: 800 !important;
-            padding: 12px 18px !important;
-            border-radius: 8px !important;
-            background-color: #1e293b !important;
-            border: 1px solid #334155 !important;
-            cursor: pointer !important;
-            transition: all 0.2s ease-in-out;
-        }
         section[data-testid="stSidebar"] .stRadio label:hover {
-            background-color: #0284c7 !important;
-            border-color: #38bdf8 !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
             color: #ffffff !important;
         }
+        /* Item Aktif */
+        section[data-testid="stSidebar"] .stRadio div[aria-checked="true"] label {
+            background-color: #1e88e5 !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 6px rgba(30, 136, 229, 0.4);
+        }
 
-        /* ==========================================
-           4. METRIC CARDS & CONTAINER
-           ========================================== */
-        .metric-box {
+        /* ----------------------------------------------------
+           4. METRIC CARDS (SESUAI GAMBAR REFERENSI)
+           ---------------------------------------------------- */
+        .card-stat {
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 18px 20px;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+            margin-bottom: 15px;
+        }
+        .card-stat-blue { background: linear-gradient(135deg, #2196f3, #1e88e5); }
+        .card-stat-green { background: linear-gradient(135deg, #4caf50, #43a047); }
+        .card-stat-orange { background: linear-gradient(135deg, #ff9800, #fb8c00); }
+        .card-stat-red { background: linear-gradient(135deg, #f44336, #e53935); }
+
+        .card-val {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+        .card-lbl {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        .card-icon {
+            position: absolute;
+            right: 18px;
+            top: 20px;
+            font-size: 32px;
+            opacity: 0.3;
+        }
+        .card-footer-info {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 11px;
+            opacity: 0.85;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* ----------------------------------------------------
+           5. CONTAINER UTAMA & TABEL
+           ---------------------------------------------------- */
+        .content-card {
             background-color: #ffffff;
-            border: 2px solid #cbd5e1;
-            border-radius: 12px;
-            padding: 22px 15px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            text-align: center;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            margin-bottom: 20px;
         }
-        .metric-title { 
-            font-size: 13px; 
-            color: #64748b; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
-        .metric-value { 
-            font-size: 26px; 
-            font-weight: 900; 
-            margin-top: 6px; 
+        .content-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c323f;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
         }
 
-        /* ==========================================
-           5. STANDAR CETAK A4 (PRINT)
-           ========================================== */
+        /* ----------------------------------------------------
+           6. CETAK A4 STYLING
+           ---------------------------------------------------- */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 15mm;
+                margin: 12mm;
             }
             section[data-testid="stSidebar"], 
             .stButton, 
             header, 
             footer, 
+            .top-navbar,
+            .breadcrumb-container,
             .stTabs [role="tablist"],
             .no-print {
                 display: none !important;
@@ -142,30 +231,29 @@ st.markdown("""
             }
         }
 
-        /* Styling Form/Lembar Laporan Fisik */
         .pdf-page {
             background: #ffffff;
             color: #000000;
-            padding: 30px;
+            padding: 25px;
             font-family: Arial, sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
             border: 1px solid #cbd5e1;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             margin-bottom: 20px;
-            border-radius: 6px;
+            border-radius: 4px;
         }
         .pdf-title {
             text-align: center;
             font-weight: bold;
-            font-size: 12pt;
+            font-size: 11pt;
             text-transform: uppercase;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             line-height: 1.4;
         }
         .pdf-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10.5pt;
+            font-size: 10pt;
         }
         .pdf-table td, .pdf-table th {
             padding: 4px 6px;
@@ -177,9 +265,9 @@ st.markdown("""
         .ttd-container {
             margin-top: 30px;
             float: right;
-            width: 300px;
+            width: 280px;
             text-align: center;
-            font-size: 11pt;
+            font-size: 10pt;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -221,7 +309,6 @@ def init_db():
     """)
     conn.commit()
 
-    # Data Seed Awal (Akan terisi jika DB masih kosong)
     c.execute("SELECT COUNT(*) FROM transaksi")
     if c.fetchone()[0] == 0:
         default_tx = [
@@ -242,27 +329,41 @@ def init_db():
 
 init_db()
 
-# Sidebar Navigation
+# Sidebar Layout (Dark Theme)
 with st.sidebar:
     st.markdown("""
-        <div style="padding: 10px 0px; text-align: center;">
-            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900;">🏢 WARTELSUS KPPK</h2>
-            <p style="color: #38bdf8; font-size: 13px; font-weight: 700; margin-top: 4px;">LAPAS NARKOTIKA YOGYAKARTA</p>
+        <div class="sidebar-brand">
+            <div style="font-size: 26px;">🏢</div>
+            <div>
+                <div class="sidebar-brand-title">WARTELSUS POS</div>
+                <div class="sidebar-brand-sub">Lapas Narkotika Yogyakarta</div>
+            </div>
         </div>
-        <hr style="border-color: #334155; margin-bottom: 20px;">
     """, unsafe_allow_html=True)
 
     menu = st.radio(
-        "MENU UTAMA",
-        ["DASHBOARD", "TRANSAKSI", "LAPORAN"],
+        "NAVIGATION",
+        [" Dashboard", " Transaksi POS", " Laporan Keuangan"],
         index=0
     )
+
+# Top Bar Header (Mirip Top Navy/Blue Navigation)
+st.markdown("""
+    <div class="top-navbar">
+        <div class="top-navbar-title">APLIKASI KEUANGAN WARTELSUS & POS</div>
+        <div style="font-size: 13px; opacity: 0.9;">Tahun Anggaran 2026</div>
+    </div>
+""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # MENU 1: DASHBOARD
 # -----------------------------------------------------------------------------
-if menu == "DASHBOARD":
-    st.markdown('<div class="page-header">DASHBOARD</div>', unsafe_allow_html=True)
+if "Dashboard" in menu:
+    st.markdown("""
+        <div class="breadcrumb-container">
+            Home » <a href="#">Dashboard Utama</a>
+        </div>
+    """, unsafe_allow_html=True)
 
     conn = sqlite3.connect("wartelsus_pos.db")
     df_tx = pd.read_sql_query("SELECT * FROM transaksi ORDER BY tanggal ASC", conn)
@@ -272,64 +373,115 @@ if menu == "DASHBOARD":
         tot_pendapatan = df_tx[df_tx['jenis'] == 'PENDAPATAN']['nominal'].sum()
         tot_biaya = df_tx[df_tx['jenis'] == 'BIAYA']['nominal'].sum()
         laba_bersih = tot_pendapatan - tot_biaya
+        tot_transaksi = len(df_tx)
 
-        # Metric Cards (3 Card)
-        m1, m2, m3 = st.columns(3)
-        with m1:
-            st.markdown(f'<div class="metric-box"><div class="metric-title">TOTAL PENDAPATAN</div><div class="metric-value" style="color:#10b981;">{fmt_rupiah(tot_pendapatan)}</div></div>', unsafe_allow_html=True)
-        with m2:
-            st.markdown(f'<div class="metric-box"><div class="metric-title">TOTAL BIAYA OPERASIONAL</div><div class="metric-value" style="color:#ef4444;">{fmt_rupiah(tot_biaya)}</div></div>', unsafe_allow_html=True)
-        with m3:
-            st.markdown(f'<div class="metric-box"><div class="metric-title">LABA BERSIH AKUMULASI</div><div class="metric-value" style="color:#0284c7;">{fmt_rupiah(laba_bersih)}</div></div>', unsafe_allow_html=True)
+        # 4 Metric Cards Berwarna (Sesuai Desain Gambar Referensi)
+        c1, c2, c3, c4 = st.columns(4)
+        
+        with c1:
+            st.markdown(f"""
+                <div class="card-stat card-stat-blue">
+                    <div class="card-icon">💰</div>
+                    <div class="card-val">{fmt_rupiah(tot_pendapatan)}</div>
+                    <div class="card-lbl">Total Pendapatan</div>
+                    <div class="card-footer-info"><span>Akumulasi Masuk</span><span>2026</span></div>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with c2:
+            st.markdown(f"""
+                <div class="card-stat card-stat-red">
+                    <div class="card-icon">💸</div>
+                    <div class="card-val">{fmt_rupiah(tot_biaya)}</div>
+                    <div class="card-lbl">Total Biaya Operasional</div>
+                    <div class="card-footer-info"><span>Akumulasi Keluar</span><span>2026</span></div>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with c3:
+            st.markdown(f"""
+                <div class="card-stat card-stat-green">
+                    <div class="card-icon">📈</div>
+                    <div class="card-val">{fmt_rupiah(laba_bersih)}</div>
+                    <div class="card-lbl">Laba Bersih</div>
+                    <div class="card-footer-info"><span>Hasil Surplus</span><span>2026</span></div>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with c4:
+            st.markdown(f"""
+                <div class="card-stat card-stat-orange">
+                    <div class="card-icon">🧾</div>
+                    <div class="card-val">{tot_transaksi}</div>
+                    <div class="card-lbl">Total Transaksi</div>
+                    <div class="card-footer-info"><span>Item Recorded</span><span>2026</span></div>
+                </div>
+            """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Baris Grafik
+        # Content Cards Grafik
         col_g1, col_g2 = st.columns([6, 4])
         
         with col_g1:
-            st.markdown('<div class="section-header">GRAFIK</div>', unsafe_allow_html=True)
+            st.markdown("""
+                <div class="content-card">
+                    <div class="content-card-title">📊 Perbandingan Pendapatan vs Biaya</div>
+            """, unsafe_allow_html=True)
+            
             df_tx['tanggal_dt'] = pd.to_datetime(df_tx['tanggal'])
             df_tx['bulan_tahun'] = df_tx['tanggal_dt'].dt.strftime('%b %Y')
-            
             df_grouped = df_tx.groupby(['bulan_tahun', 'jenis'], sort=False)['nominal'].sum().reset_index()
 
             fig = px.bar(
                 df_grouped, x='bulan_tahun', y='nominal', color='jenis',
                 barmode='group',
-                labels={'bulan_tahun': 'Bulan Laporan', 'nominal': 'Jumlah (Rp)', 'jenis': 'Jenis'},
-                color_discrete_map={'PENDAPATAN': '#10b981', 'BIAYA': '#ef4444'}
+                labels={'bulan_tahun': 'Bulan', 'nominal': 'Rupiah', 'jenis': 'Jenis'},
+                color_discrete_map={'PENDAPATAN': '#4caf50', 'BIAYA': '#f44336'}
             )
             fig.update_layout(
                 template="plotly_white", 
-                font=dict(size=13, color="#0f172a"),
-                margin=dict(l=20, r=20, t=20, b=20),
+                height=320,
+                font=dict(family="Poppins", size=12),
+                margin=dict(l=10, r=10, t=10, b=10),
                 legend=dict(title_text='', orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
             st.plotly_chart(fig, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with col_g2:
-            st.markdown('<div class="section-header">OPERASIONAL</div>', unsafe_allow_html=True)
+            st.markdown("""
+                <div class="content-card">
+                    <div class="content-card-title">🍰 Rincian Biaya Operasional</div>
+            """, unsafe_allow_html=True)
+            
             df_biaya = df_tx[df_tx['jenis'] == 'BIAYA']
             if not df_biaya.empty:
                 fig_pie = px.pie(
                     df_biaya, values='nominal', names='kategori',
-                    hole=0.4
+                    hole=0.45,
+                    color_discrete_sequence=px.colors.qualitative.Bold
                 )
                 fig_pie.update_layout(
                     template="plotly_white",
-                    font=dict(size=12, color="#0f172a"),
-                    margin=dict(l=10, r=10, t=20, b=20)
+                    height=320,
+                    font=dict(family="Poppins", size=11),
+                    margin=dict(l=10, r=10, t=10, b=10)
                 )
                 st.plotly_chart(fig_pie, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # MENU 2: TRANSAKSI
 # -----------------------------------------------------------------------------
-elif menu == "TRANSAKSI":
-    st.markdown('<div class="page-header">TRANSAKSI</div>', unsafe_allow_html=True)
+elif "Transaksi" in menu:
+    st.markdown("""
+        <div class="breadcrumb-container">
+            Home » <a href="#">Kelola Transaksi POS</a>
+        </div>
+    """, unsafe_allow_html=True)
 
-    tab_in1, tab_in2 = st.tabs(["➕ INPUT TRANSAKSI BARU", "📋 DAFTAR DATA TRANSAKSI"])
+    tab_in1, tab_in2 = st.tabs(["➕ Input Transaksi Baru", "📋 Daftar Record Transaksi"])
 
     opsi_kategori_default = [
         "TAGIHAN INTERNET",
@@ -346,27 +498,28 @@ elif menu == "TRANSAKSI":
     ]
 
     with tab_in1:
-        st.markdown('<div class="section-header">FORM ENTRY TRANSAKSI</div>', unsafe_allow_html=True)
+        st.markdown('<div class="content-card">', unsafe_allow_html=True)
+        st.markdown('<div class="content-card-title">Form Input Transaksi Kasir / Operasional</div>', unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
         with c1:
             tgl_input = st.date_input("Tanggal Transaksi", datetime.now())
             jenis_input = st.selectbox("Jenis Transaksi", ["BIAYA", "PENDAPATAN"])
             
-            kat_selected = st.selectbox("Kategori Transaksi Pengeluaran / Pendapatan", opsi_kategori_default)
+            kat_selected = st.selectbox("Kategori Transaksi", opsi_kategori_default)
             if kat_selected == "➕ TAMBAH KATEGORI BARU...":
-                kategori_input = st.text_input("Tuliskan Kategori Baru:", placeholder="Contoh: BIAYA PERBAIKAN AC").upper()
+                kategori_input = st.text_input("Tuliskan Kategori Baru:", placeholder="Contoh: PERBAIKAN AC").upper()
             else:
                 kategori_input = kat_selected
 
         with c2:
-            ket_input = st.text_input("Keterangan Rincian / Detail Transaksi", placeholder="Contoh: Pembayaran Internet IndiHome Bulan Agustus")
+            ket_input = st.text_input("Keterangan Rincian / Detail", placeholder="Contoh: Pembayaran Internet IndiHome Bulan Agustus")
             nom_raw = st.text_input("Nominal Transaksi (Rp)", value="0")
             nom_float = parse_rupiah(nom_raw)
-            st.markdown(f"Nominal Terbilang: **{fmt_rupiah(nom_float)}**")
+            st.markdown(f"Format Nominal: **{fmt_rupiah(nom_float)}**")
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("💾 SIMPAN DATA TRANSAKSI", type="primary", use_container_width=True):
+        if st.button("💾 SIMPAN TRANSAKSI", type="primary", use_container_width=True):
             if nom_float <= 0 and jenis_input == "PENDAPATAN":
                 st.error("Nominal pendapatan harus lebih dari 0!")
             elif ket_input.strip() == "":
@@ -382,9 +535,12 @@ elif menu == "TRANSAKSI":
                 conn.close()
                 st.success(f"Transaksi '{ket_input.upper()}' sebesar {fmt_rupiah(nom_float)} berhasil disimpan!")
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with tab_in2:
-        st.markdown('<div class="section-header">DATA TRANSAKSI TERSIMPAN</div>', unsafe_allow_html=True)
+        st.markdown('<div class="content-card">', unsafe_allow_html=True)
+        st.markdown('<div class="content-card-title">Riwayat Database Transaksi</div>', unsafe_allow_html=True)
+        
         conn = sqlite3.connect("wartelsus_pos.db")
         df_edit = pd.read_sql_query("SELECT * FROM transaksi ORDER BY tanggal DESC, id DESC", conn)
         conn.close()
@@ -393,7 +549,7 @@ elif menu == "TRANSAKSI":
             for idx, row in df_edit.iterrows():
                 c_tgl, c_jns, c_kat, c_ket, c_nom, c_act = st.columns([1.5, 1.5, 2.5, 3.5, 2, 1])
                 c_tgl.write(f"**{row['tanggal']}**")
-                c_jns.write(f"**{row['jenis']}**")
+                c_jns.write(f"`{row['jenis']}`")
                 c_kat.write(row['kategori'])
                 c_ket.write(row['keterangan'])
                 c_nom.write(fmt_rupiah(row['nominal']))
@@ -404,15 +560,22 @@ elif menu == "TRANSAKSI":
                     conn.commit()
                     conn.close()
                     st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# MENU 3: LAPORAN (FILTER BULAN)
+# MENU 3: LAPORAN
 # -----------------------------------------------------------------------------
-elif menu == "LAPORAN":
-    st.markdown('<div class="page-header">LAPORAN</div>', unsafe_allow_html=True)
+elif "Laporan" in menu:
+    st.markdown("""
+        <div class="breadcrumb-container">
+            Home » <a href="#">Cetak Laporan Fisik A4</a>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # Filter Bulan & Tahun Laporan
-    st.markdown('<div class="no-print">', unsafe_allow_html=True)
+    # Filter Periode Laporan
+    st.markdown('<div class="content-card no-print">', unsafe_allow_html=True)
+    st.markdown('<div class="content-card-title">Filter Periode Laporan Cetak</div>', unsafe_allow_html=True)
+    
     col_l1, col_l2, col_l3 = st.columns([3, 3, 4])
     
     bulan_dict = {
@@ -422,18 +585,17 @@ elif menu == "LAPORAN":
     }
 
     with col_l1:
-        sel_bulan_nama = st.selectbox("PILIH BULAN LAPORAN", list(bulan_dict.keys()), index=7)
+        sel_bulan_nama = st.selectbox("BULAN LAPORAN", list(bulan_dict.keys()), index=7)
         sel_bulan_kode = bulan_dict[sel_bulan_nama]
     with col_l2:
-        sel_tahun = st.number_input("PILIH TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
+        sel_tahun = st.number_input("TAHUN LAPORAN", value=2026, min_value=2020, max_value=2030)
     with col_l3:
-        sel_tgl_cetak = st.date_input("TANGGAL CETAK LAPORAN", datetime(2026, 9, 2))
+        sel_tgl_cetak = st.date_input("TANGGAL CETAK", datetime(2026, 9, 2))
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Query Filter per Bulan & Tahun
+    # Query Filter Database
     periode_query = f"{sel_tahun}-{sel_bulan_kode}"
-    
     conn = sqlite3.connect("wartelsus_pos.db")
     df_filtered = pd.read_sql_query(
         "SELECT * FROM transaksi WHERE strftime('%Y-%m', tanggal) = ?", 
@@ -464,16 +626,14 @@ elif menu == "LAPORAN":
     muffaindo2 = 0.60 * laba_bersih
 
     # Tombol Cetak A4
-    st.markdown('<div class="no-print" style="margin-top:15px; margin-bottom:20px;">', unsafe_allow_html=True)
+    st.markdown('<div class="no-print" style="margin-bottom:20px;">', unsafe_allow_html=True)
     if df_filtered.empty:
-        st.warning(f"⚠️ Tidak ada data transaksi untuk periode bulan **{sel_bulan_nama} {sel_tahun}**.")
-    else:
-        st.info(f"Showing Laporan Periode: **{sel_bulan_nama} {sel_tahun}** ({len(df_filtered)} Transaksi ditemukan)")
+        st.warning(f"⚠️ Tidak ada record transaksi pada **{sel_bulan_nama} {sel_tahun}**.")
     
-    st.button("🖨️ CETAK / PRINT LAPORAN (UKURAN A4)", type="primary", on_click=lambda: st.components.v1.html("<script>window.parent.print();</script>", height=0))
+    st.button("🖨️ CETAK / PRINT DOKUMEN LAPORAN A4", type="primary", use_container_width=True, on_click=lambda: st.components.v1.html("<script>window.parent.print();</script>", height=0))
     st.markdown('</div>', unsafe_allow_html=True)
 
-    tab_h1, tab_h2 = st.tabs(["📄 HALAMAN 1 - LAPORAN LABA RUGI", "📄 HALAMAN 2 - JASA VIDEO CALL"])
+    tab_h1, tab_h2 = st.tabs(["📄 Halaman 1 - Laba Rugi", "📄 Halaman 2 - Jasa Video Call"])
 
     tgl_ttd_str = f"Yogyakarta, {sel_tgl_cetak.strftime('%d')} {sel_bulan_nama.capitalize()} {sel_tgl_cetak.strftime('%Y')}"
 
@@ -612,7 +772,7 @@ PERIODE {sel_bulan_nama} {sel_tahun}
 </table>
 
 <div style="clear:both;"></div>
-<div style="float: right; font-size: 9pt; margin-top: 15px;">Hal. 1</div>
+<div style="float: right; font-size: 8pt; margin-top: 15px;">Hal. 1</div>
 <div style="clear:both;"></div>
 </div>"""
         st.markdown(html_h1, unsafe_allow_html=True)
@@ -754,7 +914,7 @@ JASA VIDIO CALL LAPAS NARKOTIKA KELAS IIA YOGYAKARTA
 </div>
 
 <div style="clear:both;"></div>
-<div style="float: right; font-size: 9pt; margin-top: 15px;">Hal. 2</div>
+<div style="float: right; font-size: 8pt; margin-top: 15px;">Hal. 2</div>
 <div style="clear:both;"></div>
 </div>"""
         st.markdown(html_h2, unsafe_allow_html=True)
